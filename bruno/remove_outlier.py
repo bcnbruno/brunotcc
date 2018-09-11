@@ -19,5 +19,4 @@ def remove_outlier(data):
     return df
 data = remove_outlier(data)
 
-#print(data.columns.values)
 #data.to_excel('modules/databases/vinhos/wine_no_outlier.xlsx')

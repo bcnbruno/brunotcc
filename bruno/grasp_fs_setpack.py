@@ -101,7 +101,7 @@ class SPProblem(object):
                     constraint[j] = 1
                     self.constraints_feasibility.append(constraint)
         self.constraints_feasibility = np.array(self.constraints_feasibility)
-        print('shape ', self.constraints_feasibility.shape)
+        #print('shape ', self.constraints_feasibility.shape)
         
     ### Get variances for attributes
     def get_variances(self):
@@ -173,7 +173,10 @@ class SPProblem(object):
 class Grasp_SetPack(Grasp):
     def __init__(self, problem, alpha, max_iter, elite_size, max_no_improv, verbose):
         self.problem = problem
-        super(Grasp_SetPack, self).__init__(problem.items, alpha, max_iter, elite_size,
+        self.min_size = problem.min_size
+        self.max_size = problem.max_size
+        self.n_items = len(problem.items)
+        super(Grasp_SetPack, self).__init__(problem.items, self.min_size, self.max_size, self.n_items, alpha, max_iter, elite_size,
                 max_no_improv, problem.maximise, verbose)
                 
     def cost(self, solution):
@@ -328,11 +331,9 @@ def main():
     
     ### Loading data
     if args.dt == 1:
-        #json_file = 'modules/databases/vinhos/wine_normalized_no_outlier.json'
-        json_file = 'modules/databases/vinhos/wine_normalized.json'
+        json_file = 'modules/databases/vinhos/wine_normalized_no_outlier.json'
     elif args.dt == 2:
-        #json_file = 'modules/databases/moba-gabriel/data_normalized_no_outlier.json'
-        json_file = 'modules/databases/moba-gabriel/data_normalized.json'
+        json_file = 'modules/databases/moba-gabriel/data_normalized_no_outlier.json'
     elif args.dt == 3:
         json_file = 'modules/databases/convulsao/seizure_normalized_no_outlier.json'
            

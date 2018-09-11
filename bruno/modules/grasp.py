@@ -6,8 +6,10 @@ Created on Wed Apr 25 19:01:19 2018
 """
 
 from abc import ABC, abstractmethod
-import copy
 from operator import attrgetter
+import copy
+import math
+import numpy as np
 import random
 
 class Item(ABC):
@@ -50,13 +52,18 @@ class Solution(object):
         return repr((self.evaluation, self.items))
 
 class Grasp(ABC):
-    def __init__(self, items, alpha, max_iter, elite_size, max_no_improv=0.2, maximise=True, verbose=False):
+    def __init__(self, items, min_size, max_size, n_items, alpha, max_iter, elite_size, max_no_improv=0.2, maximise=True, verbose=False):
         super(Grasp, self).__init__()
         self.maximise = maximise        
         
         self.items = items
+        self.create_alpha_list()
+        self.create_cl()
         self.reset_rcl()
         
+        self.min_size = min_size
+        self.max_size = max_size
+        self.n_items = n_items
         self.alpha = alpha
         self.max_no_improv = int(max_no_improv * max_iter)
         self.max_iter = max_iter
@@ -84,44 +91,54 @@ class Grasp(ABC):
     def reevaluate_rcl_items(self):
         pass
     
+    def create_alpha_list(self):        
+        min_alpha = round((self.min_size / self.n_items), 3)
+        max_alpha = 0.8 # 80% dos valores
+        n = (max_alpha - min_alpha) / 5
+        
+        return np.arange(min_alpha, max_alpha, n) 
+    
     def construct_greedy_randomized(self):
         items = []
-        self.reset_rcl()
-        while len(self.rcl):
-            self.update_rcl()
-            i = random.randint(0, len(self.rcl)-1)
-            item = self.rcl.pop(i)
-            
-            candidate = items + [item]
-            if self.check_feasibility(candidate):
-                items.append(item)
-            else:
-                self.rcl.append(item)
-            
-            self.reevaluate_rcl_items()
-            
+        alphas = self.create_alpha_list()
+        # sorteia alphas
+        i = random.randint(0, 4)
+        self.create_cl()
+        self.update_rcl(alphas[i])
+        items = self.build_solution()
         solution = Solution(items=items, maximise=self.maximise)
         solution.evaluation = self.cost(solution)
         
         return solution
     
+    def create_cl(self):
+        self.cl = copy.deepcopy(self.items)
+        self.cl.sort(key=attrgetter('insertion_cost'), reverse=self.maximise)
+    
     def reset_rcl(self):
         self.rcl = copy.deepcopy(self.items)
         
-    def update_rcl(self):
-        """rcl_max = max(self.rcl, key=attrgetter('insertion_cost')).insertion_cost
-        rcl_min = min(self.rcl, key=attrgetter('insertion_cost')).insertion_cost
+    def update_rcl(self, alph):
+        # Pega da lista de candidatos os n melhores e insere na lista dos
+        # candidatos restritos
+        n = max( 1, int(round(alph * self.n_items)) )
+        self.rcl = copy.deepcopy(self.cl[:n])
         
-        if self.maximise:
-            threshold = rcl_max - self.alpha*(rcl_max - rcl_min)
-            self.rcl = [item for item in self.rcl if item.insertion_cost >= threshold]
-        else:
-            threshold = rcl_min + self.alpha*(rcl_max - rcl_min)
-            self.rcl = [item for item in self.rcl if item.insertion_cost <= threshold]"""
-        n = min(self.alpha, len(self.rcl))
-        self.rcl.sort(key=attrgetter('insertion_cost'), reverse=self.maximise)
-        self.rcl = self.rcl[:n]
-    
+    def build_solution(self):
+        s = []
+        # Sorteia quantos itens serao coletados para a solucao
+        it = random.randint(self.min_size, self.max_size)
+        while len(s) <= self.max_size and len(self.rcl):
+            if it:
+                i = random.randint(0, len(self.rcl)-1)
+                item = self.rcl.pop(i)
+                s.append(item)
+                it -= 1
+            else:
+                break
+        
+        return s
+        
     def improvement(self, candidate, reference):
         if self.maximise:
             return candidate.evaluation > reference.evaluation
@@ -172,7 +189,7 @@ class Grasp(ABC):
                 print('GRASP Iteration %d:' % (self.iteration+1))
             candidate = self.construct_greedy_randomized()
             if self.verbose:
-                print('\tSolution constructed. Evaluation = %f' % candidate.evaluation)
+                print('\tSolution constructed: ', candidate)
             self.check_elite(candidate)
             
             candidate = self.local_search(candidate)
