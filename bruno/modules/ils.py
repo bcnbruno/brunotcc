@@ -73,6 +73,7 @@ class ILS(ABC):
         self.max_no_improv = int(max_no_improv * max_iter)
         self.max_iter = max_iter
         self.best = Solution()
+        self.best_iteration = 0
         self.iteration = 0
         self.ls_count = 0
         self.elite_size = elite_size
@@ -101,7 +102,7 @@ class ILS(ABC):
         n = random.randint(self.min_size, self.max_size) # quantidade de itens na solucao inicial
         items = self.build_solution(n)
         solution = Solution(items=items, maximise=self.maximise)
-        solution.evaluation = self.cost(solution)
+        solution.evaluation = self.cost(solution)        
         
         return solution
     
@@ -167,6 +168,7 @@ class ILS(ABC):
             zeros.append(b)
             n -= 1            
         new_candidate = Solution(items=self.items_from_vector(vector))
+        new_candidate.evaluation = self.cost(new_candidate)
         
         return new_candidate
     
@@ -184,6 +186,7 @@ class ILS(ABC):
                 solution = candidate
             else:
                 self.ls_count += 1
+                
         return solution
         
     def check_elite(self, solution):
@@ -206,6 +209,14 @@ class ILS(ABC):
                         self.elite.append(copy.deepcopy(solution))
                         self.elite.sort(key=attrgetter('evaluation'), reverse=self.maximise)
         
+    
+    def mean_std_elite(self):
+        values = []
+        for x in self.elite:
+            values.append(x.evaluation)
+        return round(np.mean(values), 5), round(np.std(values), 5)
+   
+    
     def run(self):
         count_no_improv = 0        
         if self.verbose:
@@ -214,10 +225,9 @@ class ILS(ABC):
         candidate = self.construct_greedy()
         if self.verbose:
             print('\tSolution constructed: ', candidate)
-        
         self.check_elite(candidate)    
         candidate = self.local_search(candidate)
-        self.check_elite(candidate)
+        self.check_elite(candidate)        
         self.best = candidate
         while self.iteration < self.max_iter:
             # perturbacao
@@ -230,6 +240,7 @@ class ILS(ABC):
                     print('\n\t\tNew best! Evaluation: %f' % candidate.evaluation)
                 self.best = candidate
                 count_no_improv = 0
+                self.best_iteration = self.iteration
             else:
                 count_no_improv += 1
                 
@@ -254,3 +265,6 @@ class ILS(ABC):
         
     def get_elite(self):
         return self.elite
+        
+    def get_best_iteration(self):
+        return self.best_iteration + 1

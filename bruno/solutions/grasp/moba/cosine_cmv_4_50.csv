@@ -1,0 +1,16 @@
+File solutions/grasp/moba/cosine_cmv_4_50.csv,,,,,,,,,,,,,
+elapsed_time,max_gen_reached,,,,,,,,,,,,
+736.289243,False,,,,,,,,,,,,
+alpha,const,corr_threshold,dt,elsize,k,lang,max_iter,max_no_improv,maxs,metric,mins,seed,verbose
+4,1,0.75,2,10,10,en,50,0.2,6,c,3,-1,False
+Elite,,,,,,,,,,,,,
+evaluation,0,1,2,3,4,5,6,7,8,,,,
+0.193395,0,1,0,1,0,1,0,0,0,,,,
+0.192072,0,1,0,0,0,1,0,0,1,,,,
+0.179676,0,1,1,1,0,1,0,0,0,,,,
+0.159858,1,1,0,1,0,1,0,0,0,,,,
+0.156403,1,1,1,1,0,1,0,0,0,,,,
+0.136876,1,1,1,0,0,1,0,0,1,,,,
+0.136772,1,1,1,0,0,1,0,0,0,,,,
+Mean,Std,It_total,It_best,Number_solutions_hash,Hash_access,Hash_add,,,,,,,
+0.16501,0.02218,15,4,59,271,59,,,,,,,

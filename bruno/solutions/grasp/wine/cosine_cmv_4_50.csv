@@ -1,0 +1,13 @@
+File solutions/grasp/wine/cosine_cmv_4_50.csv,,,,,,,,,,,,,
+elapsed_time,max_gen_reached,,,,,,,,,,,,
+9.302118,False,,,,,,,,,,,,
+alpha,const,corr_threshold,dt,elsize,k,lang,max_iter,max_no_improv,maxs,metric,mins,seed,verbose
+4,1,0.75,1,10,3,en,50,0.2,6,c,3,-1,False
+Elite,,,,,,,,,,,,,
+evaluation,0,1,2,3,4,5,6,7,8,9,10,11,
+0.631337,1,0,0,1,0,0,0,0,0,0,1,0,
+0.624724,1,0,0,0,0,0,0,1,0,0,1,0,
+0.615981,0,1,0,0,0,0,0,1,0,0,1,0,
+0.539909,1,1,0,0,0,0,0,1,0,0,1,0,
+Mean,Std,It_total,It_best,Number_solutions_hash,Hash_access,Hash_add,,,,,,,
+0.60299,0.03682,19,8,59,275,59,,,,,,,

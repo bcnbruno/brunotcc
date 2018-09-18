@@ -52,9 +52,10 @@ class Solution(object):
         return repr((self.evaluation, self.items))
 
 class Grasp(ABC):
-    def __init__(self, items, min_size, max_size, n_items, alpha, max_iter, elite_size, max_no_improv=0.2, maximise=True, verbose=False):
+    def __init__(self, items, min_size, max_size, n_items, alpha, max_iter, elite_size, const, max_no_improv=0.2, maximise=True, verbose=False):
         super(Grasp, self).__init__()
         self.maximise = maximise        
+        self.const = const
         
         self.items = items
         self.create_alpha_list()
@@ -69,6 +70,7 @@ class Grasp(ABC):
         self.max_iter = max_iter
         self.best = Solution()
         self.iteration = 0
+        self.best_iteration = 0
         self.ls_count = 0
         self.elite_size = elite_size
         self.elite = []
@@ -99,13 +101,29 @@ class Grasp(ABC):
         return np.arange(min_alpha, max_alpha, n) 
     
     def construct_greedy_randomized(self):
-        items = []
-        alphas = self.create_alpha_list()
-        # sorteia alphas
-        i = random.randint(0, 4)
-        self.create_cl()
-        self.update_rcl(alphas[i])
-        items = self.build_solution()
+        if self.const == 1:  # Construção por valor     
+            items = []
+            self.reset_rcl()
+            while len(self.rcl):
+                self.update_rcl(-1)
+                i = random.randint(0, len(self.rcl)-1)
+                item = self.rcl.pop(i)            
+                candidate = items + [item]
+                if self.check_feasibility(candidate):
+                    items.append(item)
+                else:
+                    self.rcl.append(item)
+                
+                self.reevaluate_rcl_items()
+            
+        else:
+            items = []
+            alphas = self.create_alpha_list()        
+            i = random.randint(0, 4) # sorteia alphas
+            self.create_cl()
+            self.update_rcl(alphas[i])
+            items = self.build_solution()
+        
         solution = Solution(items=items, maximise=self.maximise)
         solution.evaluation = self.cost(solution)
         
@@ -119,10 +137,25 @@ class Grasp(ABC):
         self.rcl = copy.deepcopy(self.items)
         
     def update_rcl(self, alph):
-        # Pega da lista de candidatos os n melhores e insere na lista dos
-        # candidatos restritos
-        n = max( 1, int(round(alph * self.n_items)) )
-        self.rcl = copy.deepcopy(self.cl[:n])
+        if alph == -1: # Construção por valor            
+            rcl_max = max(self.rcl, key=attrgetter('insertion_cost')).insertion_cost
+            rcl_min = min(self.rcl, key=attrgetter('insertion_cost')).insertion_cost
+        
+            if self.maximise:
+                threshold = rcl_max - self.alpha*(rcl_max - rcl_min)
+                self.rcl = [item for item in self.rcl if item.insertion_cost >= threshold]
+            else:
+                threshold = rcl_min + self.alpha*(rcl_max - rcl_min)
+                self.rcl = [item for item in self.rcl if item.insertion_cost <= threshold]
+                
+            n = min(self.alpha, len(self.rcl))
+            self.rcl.sort(key=attrgetter('insertion_cost'), reverse=self.maximise)
+            self.rcl = self.rcl[:n]
+        
+        else: # Por cardinalidade
+            # Pega da lista de candidatos os n melhores e insere na lista dos candidatos restritos
+            n = max( 1, int(round(alph * self.n_items)) )
+            self.rcl = copy.deepcopy(self.cl[:n])
         
     def build_solution(self):
         s = []
@@ -180,7 +213,14 @@ class Grasp(ABC):
                         self.elite.pop(len(self.elite)-1)
                         self.elite.append(copy.deepcopy(solution))
                         self.elite.sort(key=attrgetter('evaluation'), reverse=self.maximise)
+      
+    def mean_std_elite(self):
+        values = []
+        for x in self.elite:
+            values.append(x.evaluation)
+        return round(np.mean(values), 5), round(np.std(values), 5)
         
+    
     def run(self):
         count_no_improv = 0
         while self.iteration < self.max_iter:
@@ -198,6 +238,7 @@ class Grasp(ABC):
             if self.improvement(candidate, self.best):
                 if self.verbose:
                     print('\n\t\tNew best! Evaluation: %f' % candidate.evaluation)
+                self.best_iteration = self.iteration 
                 self.best = candidate
                 count_no_improv = 0
             else:
@@ -220,7 +261,10 @@ class Grasp(ABC):
         return self.best
         
     def get_iteration(self):
-        return self.iteration
+        return self.iteration + 1
+    
+    def get_best_iteration(self):
+        return self.best_iteration + 1
         
     def get_elite(self):
         return self.elite

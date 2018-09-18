@@ -75,6 +75,8 @@ class SPProblem(object):
         self.max_possible = len(self.data.columns)
         self.maximise = maximise
         self.hash = {}
+        self.hash_access = 0
+        self.hash_add = 0
         
         ### constraints creation
         self.attributes = list(self.data.columns)
@@ -90,6 +92,9 @@ class SPProblem(object):
         self.variances = self.get_variances()        
         self.items = []
         self.create_items()
+        
+    def get_num_hash(self):
+        return len(self.hash)
         
     def create_constraints(self):
         for attr in self.attributes:
@@ -111,6 +116,12 @@ class SPProblem(object):
         self.constraints_feasibility = np.array(self.constraints_feasibility)
         #print('shape ', self.constraints_feasibility.shape)
         
+    def get_hash_access(self):
+        return self.hash_access
+    
+    def get_hash_add(self):
+        return self.hash_add
+    
     ### Get variances for attributes
     def get_variances(self):
         sel = fs.VarianceThreshold()
@@ -126,6 +137,7 @@ class SPProblem(object):
             self.items.append(SPItem(pair[0], item_id, cost))
             
     def check_hash(self, solution):
+        self.hash_access += 1
         solution_hash = solution.get_hash()
         if solution_hash in self.hash:
             return self.hash[solution_hash]
@@ -133,6 +145,7 @@ class SPProblem(object):
         return None
         
     def add_to_hash(self, solution, evaluation):
+        self.hash_add += 1
         solution_hash = solution.get_hash()
         self.hash[solution_hash] = evaluation
         
@@ -185,7 +198,10 @@ class ILS_SetPack(ILS):
         self.max_size = problem.max_size
         super(ILS_SetPack, self).__init__(problem.items, self.min_size, self.max_size, alpha, max_iter, elite_size,
                 max_no_improv, problem.maximise, verbose)
-                
+    
+    def number_solutions_hash(self):
+        return self.problem.get_num_hash()  
+            
     def cost(self, solution):
         return self.problem.cost(solution)
         
@@ -267,7 +283,7 @@ def print_solution(solution):
     
     print(s)
     
-def save_solutions(elite, data, time, max_gen_reached, args):
+def save_solutions(ils, data, time, max_gen_reached, args):
     dic = vars(args)
     
     s = 'File %s\n' % dic['csv_file']
@@ -298,7 +314,7 @@ def save_solutions(elite, data, time, max_gen_reached, args):
     s += head + '\n'
     
     f = attrgetter('id')
-    for sol in elite:
+    for sol in ils.elite:
         vector = np.zeros(len(data.columns), dtype=int)
         for item in sol.items:
             att_id = f(item)
@@ -309,6 +325,16 @@ def save_solutions(elite, data, time, max_gen_reached, args):
         
     if args.lang == 'pt':
         s = s.replace('.', ',')
+        
+    row = [ 'Mean', 'Std', 'It_total', 'It_best', 'Number_solutions_hash', 'Hash_access', 'Hash_add' ]
+    row = ';'.join(str(e) for e in row)
+            
+    s += str(row) + '\n'
+    mean, std = ils.mean_std_elite()
+    row = [ mean, std, ils.get_iteration(), ils.get_best_iteration(), ils.number_solutions_hash(), ils.problem.get_hash_access(), ils.problem.get_hash_add() ]
+    row = ';'.join(str(e) for e in row)
+    
+    s += str(row)
     
     fp = open(args.csv_file, 'w')
     fp.write(s)
@@ -382,7 +408,7 @@ def main():
     if not max_gen_reached:
         print('\nStopped after %d generations without improvement.\n' % int(args.max_no_improv * args.max_iter))
         
-    save_solutions(ils.elite, data, elapsed_time, max_gen_reached, args)
+    save_solutions(ils, data, elapsed_time, max_gen_reached, args)
     
 if __name__ == '__main__':
     main()
