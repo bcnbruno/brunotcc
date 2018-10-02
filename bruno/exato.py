@@ -269,7 +269,16 @@ def main():
     parser.add_argument('--alpha', type=int, default=3, help='Greediness factor (default=0.3)')
     args = parser.parse_args()
            
-    data = pd.read_json('modules/databases/convulsao/seizure_normalized_no_outlier.json')
+     ### Loading data
+    if args.dt == 1:
+        json_file = 'modules/databases/vinhos/wine_normalized_no_outlier.json'
+    elif args.dt == 2:
+        json_file = 'modules/databases/moba-gabriel/data_normalized_no_outlier.json'
+    elif args.dt == 3:
+        json_file = 'modules/databases/convulsao/seizure_normalized_no_outlier.json'
+           
+    data = pd.read_json(json_file)
+    #data = pd.read_json('modules/databases/convulsao/seizure_normalized_no_outlier.json')
     
     L = data.columns.values    
     problem = SPProblem(args.k, args.metric, args.seed, data, args.mins, args.maxs, args.corr_threshold, maximise=True)
