@@ -1,0 +1,19 @@
+File solutions/vns/wine/sol.csv
+elapsed_time;max_gen_reached
+20.984086;False
+const;corr_threshold;dt;elsize;k;lang;max_iter;max_no_improv;maxs;metric;mins;n_neighborhood;seed;verbose
+1;0.75;1;10;3;en;300;0.2;6;c;3;3;-1;False
+Elite
+evaluation;0;1;2;3;4;5;6;7;8;9;10;11
+0.698179;1;0;0;1;0;0;0;0;0;0;0;1
+0.666886;0;0;0;0;1;0;0;1;0;0;0;1
+0.631337;1;0;0;1;0;0;0;0;0;0;1;0
+0.615715;1;0;0;1;0;1;0;0;0;0;0;0
+0.601191;0;1;0;0;0;0;0;1;0;0;0;1
+0.562357;0;1;0;0;0;0;0;1;0;0;1;1
+0.539909;1;1;0;0;0;0;0;1;0;0;1;0
+0.488525;0;0;0;1;0;1;0;0;0;0;0;1
+0.449420;0;0;1;1;0;1;0;1;0;0;0;1
+0.417275;0;1;0;0;0;1;0;1;0;1;1;0
+Mean;Std;It_total;It_best;Number_solutions_hash;Hash_access;Hash_add
+0.56708;0.08833;5;1;136;570;136

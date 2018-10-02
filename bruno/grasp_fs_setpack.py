@@ -4,6 +4,8 @@
 Created on Thu Apr 26 02:39:32 2018
 
 @author: marcos
+
+modified by bruno
 """
 
 from modules.grasp import Grasp, Item

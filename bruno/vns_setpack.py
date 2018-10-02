@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Sep  8 09:26:17 2018
+Created on Sat Sep 29 21:51:42 2018
 
 @author: bruno
 """
 
-from modules.ils import ILS, Item
+from modules.vns import VNS, Item
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 import sklearn.feature_selection as fs
@@ -87,7 +87,7 @@ class SPProblem(object):
         
     def get_num_hash(self):
         return len(self.hash)
-        
+    
     def create_constraints(self):
         for attr in self.attributes:
             self.constraints_counts[attr] = 0
@@ -108,12 +108,6 @@ class SPProblem(object):
         self.constraints_feasibility = np.array(self.constraints_feasibility)
         #print('shape ', self.constraints_feasibility.shape)
         
-    def get_hash_access(self):
-        return self.hash_access
-    
-    def get_hash_add(self):
-        return self.hash_add
-    
     ### Get variances for attributes
     def get_variances(self):
         sel = fs.VarianceThreshold()
@@ -140,6 +134,12 @@ class SPProblem(object):
         self.hash_add += 1
         solution_hash = solution.get_hash()
         self.hash[solution_hash] = evaluation
+        
+    def get_hash_access(self):
+        return self.hash_access
+    
+    def get_hash_add(self):
+        return self.hash_add
         
     def get_vector(self, solution):
         vector = copy.deepcopy(solution.items[0].id)
@@ -183,17 +183,18 @@ class SPProblem(object):
         
         return evaluation
 
-class ILS_SetPack(ILS):
-    def __init__(self, problem, alpha, max_iter, elite_size, max_no_improv, verbose):
+class VNS_SetPack(VNS):
+    def __init__(self, problem, n_neighborhood, max_iter, elite_size, const, max_no_improv, verbose):
         self.problem = problem
         self.min_size = problem.min_size
         self.max_size = problem.max_size
-        super(ILS_SetPack, self).__init__(problem.items, self.min_size, self.max_size, alpha, max_iter, elite_size,
+        self.n_items = len(problem.items)
+        super(VNS_SetPack, self).__init__(problem.items, self.min_size, self.max_size, self.n_items, n_neighborhood, max_iter, elite_size, const,
                 max_no_improv, problem.maximise, verbose)
-    
+      
     def number_solutions_hash(self):
-        return self.problem.get_num_hash()  
-            
+        return self.problem.get_num_hash()        
+          
     def cost(self, solution):
         return self.problem.cost(solution)
         
@@ -207,6 +208,9 @@ class ILS_SetPack(ILS):
                     attr = self.problem.attributes[i]
                     for pos, obj in enumerate(self.rcl):
                         if attr == f(obj):
+                            #print('pos: ', pos)
+                            #print('rcl: ', self.rcl[pos])
+                            #self.rcl.remove(pos)
                             self.rcl.remove(self.rcl[pos])
                             break
         
@@ -215,7 +219,7 @@ class ILS_SetPack(ILS):
     def reevaluate_rcl_items(self):
         pass
     
-    """def items_from_vector(self, vector):
+    def items_from_vector(self, vector):
         f = attrgetter('name')
         new_items = []
         for bit, attr in zip(vector, self.problem.attributes):
@@ -225,7 +229,7 @@ class ILS_SetPack(ILS):
                         new_items.append(copy.deepcopy(item))
                         break
                         
-        return new_items"""
+        return new_items
         
     def analyse_vector(self, vector):
         item_count = 0
@@ -275,7 +279,7 @@ def print_solution(solution):
     
     print(s)
     
-def save_solutions(ils, data, time, max_gen_reached, args):
+def save_solutions(vns, data, time, max_gen_reached, args):
     dic = vars(args)
     
     s = 'File %s\n' % dic['csv_file']
@@ -306,7 +310,7 @@ def save_solutions(ils, data, time, max_gen_reached, args):
     s += head + '\n'
     
     f = attrgetter('id')
-    for sol in ils.elite:
+    for sol in vns.elite:
         vector = np.zeros(len(data.columns), dtype=int)
         for item in sol.items:
             att_id = f(item)
@@ -314,16 +318,16 @@ def save_solutions(ils, data, time, max_gen_reached, args):
             
         s += '%f;' % sol.evaluation
         s += ';'.join([str(bit) for bit in vector]) + '\n'
-        
+            
     if args.lang == 'pt':
         s = s.replace('.', ',')
-        
+
     row = [ 'Mean', 'Std', 'It_total', 'It_best', 'Number_solutions_hash', 'Hash_access', 'Hash_add' ]
     row = ';'.join(str(e) for e in row)
             
     s += str(row) + '\n'
-    mean, std = ils.mean_std_elite()
-    row = [ mean, std, ils.get_iteration(), ils.get_best_iteration(), ils.number_solutions_hash(), ils.problem.get_hash_access(), ils.problem.get_hash_add() ]
+    mean, std = vns.mean_std_elite()
+    row = [ mean, std, vns.get_iteration(), vns.get_best_iteration(), vns.number_solutions_hash(), vns.problem.get_hash_access(), vns.problem.get_hash_add() ]
     row = ';'.join(str(e) for e in row)
     
     s += str(row)
@@ -348,7 +352,8 @@ def main():
     parser.add_argument('--corr_threshold', '-crth', type=float, default=0.75, help='Value for correlation threshold (absolute value). Used to create constraints (default=0.75)')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose excution of GRASP (default=False)')
     parser.add_argument('--dt', type=int, default=1, help='Choose data: 1 - wines | 2 - moba | 3 - seizure (defaut=1)')
-    parser.add_argument('--alpha', type=int, default=3, help='Greediness factor (default=0.3)')
+    parser.add_argument('--const', type=int, default=1, help='Choose contructive method: 1 - Value | 2 - Cardinality (default=1)')
+    parser.add_argument('--n_neighborhood', type=int, default=3, help='Default (default=0.3)')
     args = parser.parse_args()
     
     ### Loading data
@@ -382,25 +387,33 @@ def main():
                             args.corr_threshold,
                             maximise=maximise)
                             
-    ils = ILS_SetPack(problem, args.alpha, args.max_iter, args.elsize, args.max_no_improv, args.verbose)
-    ### Executing GRASP
+    vns = VNS_SetPack(problem, args.n_neighborhood, args.max_iter, args.elsize, args.const, args.max_no_improv, args.verbose)
+    
+    ### Executing VNS
     start_time = time.time()
-    max_gen_reached = ils.run()
+    max_gen_reached = vns.run()
     elapsed_time = time.time() - start_time
     
     print('\nElite:')
-    for s in ils.get_elite():
+    for s in vns.get_elite():
         print_solution(s)
     
     print('\nBest solution found', end=' ')
-    print(ils.get_best())
+    print(vns.get_best())
     
     print('\nTotal elapsed time: %s' % (get_formatted_time(elapsed_time)))
     
     if not max_gen_reached:
         print('\nStopped after %d generations without improvement.\n' % int(args.max_no_improv * args.max_iter))
-        
-    save_solutions(ils, data, elapsed_time, max_gen_reached, args)
+      
+    """print('Mean, std: ', grasp.mean_std_elite())    
+    print('Iterations total: ', grasp.iteration)
+    print('Iteration best: ', grasp.best_iteration)
+    print('Number of solutions in the hash: ', grasp.number_solutions_hash())
+    print('Hash access: ', grasp.problem.hash_access)
+    print('Hash add: ', grasp.problem.hash_add)"""        
+       
+    save_solutions(vns, data, elapsed_time, max_gen_reached, args)
     
 if __name__ == '__main__':
     main()

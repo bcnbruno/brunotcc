@@ -12,10 +12,22 @@ import sklearn.feature_selection as fs
 import argparse
 import copy
 
+from pynput import keyboard
 from modules.grasp import Grasp, Item, Solution
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from operator import attrgetter
+
+break_program = False
+
+### Get key, if key == esc the program ends
+def on_press(key):
+    global break_program
+    print ('Key, ', key, ' pressed')
+    if key == keyboard.Key.esc:
+        print ('Ending program!!!')
+        break_program = True
+        return False
 
 ### Function for formatting time in human readable format
 def get_formatted_time(s):
@@ -257,22 +269,27 @@ def main():
     parser.add_argument('--alpha', type=int, default=3, help='Greediness factor (default=0.3)')
     args = parser.parse_args()
            
-    data = pd.read_json('modules/databases/vinhos/wine_normalized.json')
+    data = pd.read_json('modules/databases/convulsao/seizure_normalized_no_outlier.json')
     
     L = data.columns.values    
     problem = SPProblem(args.k, args.metric, args.seed, data, args.mins, args.maxs, args.corr_threshold, maximise=True)
     all_solutions = []   
     
-    
-    for p in range(2, len(L)+1):
-        for c in it.combinations(L, p):
-            vector = np.zeros(len(L))
-            for a in c:
-                vector[a] = 1
-            solution = Solution(items=items_from_vector(vector, problem)) 
-            solution.evaluation = problem.cost(solution)
-            all_solutions.append(solution)
-    
+    with keyboard.Listener(on_press=on_press) as listener:
+        for p in range(2, len(L)+1):
+            if break_program == True:
+                    break
+            for c in it.combinations(L, p):
+                vector = np.zeros(len(L))
+                for a in c:
+                    vector[a] = 1
+                solution = Solution(items=items_from_vector(vector, problem)) 
+                solution.evaluation = problem.cost(solution)
+                all_solutions.append(solution)
+                if break_program == True:
+                    break                
+        listener.join()
+        
     all_solutions.sort(key=attrgetter('evaluation'), reverse=True)
     save_solutions(all_solutions, data, args)
     
