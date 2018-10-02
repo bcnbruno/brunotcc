@@ -186,12 +186,12 @@ class SPProblem(object):
         return evaluation
 
 class Grasp_SetPack(Grasp):
-    def __init__(self, problem, alpha, max_iter, elite_size, const, max_no_improv, verbose):
+    def __init__(self, t, problem, alpha, max_iter, elite_size, const, max_no_improv, verbose):
         self.problem = problem
         self.min_size = problem.min_size
         self.max_size = problem.max_size
         self.n_items = len(problem.items)
-        super(Grasp_SetPack, self).__init__(problem.items, self.min_size, self.max_size, self.n_items, alpha, max_iter, elite_size, const,
+        super(Grasp_SetPack, self).__init__(t, problem.items, self.min_size, self.max_size, self.n_items, alpha, max_iter, elite_size, const,
                 max_no_improv, problem.maximise, verbose)
       
     def number_solutions_hash(self):
@@ -356,6 +356,7 @@ def main():
     parser.add_argument('--dt', type=int, default=1, help='Choose data: 1 - wines | 2 - moba | 3 - seizure (defaut=1)')
     parser.add_argument('--const', type=int, default=1, help='Choose contructive method: 1 - Value | 2 - Cardinality (default=1)')
     parser.add_argument('--alpha', type=int, default=3, help='Greediness factor (default=0.3)')
+    parser.add_argument('--time', type=int, default=60, help='Maximum execution time. | 60 = 60s | 3600 = 1h | (default=60s)')
     args = parser.parse_args()
     
     ### Loading data
@@ -388,8 +389,9 @@ def main():
                             args.maxs,
                             args.corr_threshold,
                             maximise=maximise)
-                            
-    grasp = Grasp_SetPack(problem, args.alpha, args.max_iter, args.elsize, args.const, args.max_no_improv, args.verbose)
+    
+    grasp = Grasp_SetPack(args.time, problem, args.alpha, args.max_iter, args.elsize, args.const, args.max_no_improv, args.verbose)
+    
     ### Executing GRASP
     start_time = time.time()
     max_gen_reached = grasp.run()
@@ -411,13 +413,6 @@ def main():
     else:
         print('Constructive method: Cardinality')
       
-    """print('Mean, std: ', grasp.mean_std_elite())    
-    print('Iterations total: ', grasp.iteration)
-    print('Iteration best: ', grasp.best_iteration)
-    print('Number of solutions in the hash: ', grasp.number_solutions_hash())
-    print('Hash access: ', grasp.problem.hash_access)
-    print('Hash add: ', grasp.problem.hash_add)"""        
-       
     save_solutions(grasp, data, elapsed_time, max_gen_reached, args)
     
 if __name__ == '__main__':

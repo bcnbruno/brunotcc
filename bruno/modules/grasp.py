@@ -13,6 +13,7 @@ import copy
 import math
 import numpy as np
 import random
+import time
 
 class Item(ABC):
     def __init__(self, item_id, insertion_cost):
@@ -54,7 +55,7 @@ class Solution(object):
         return repr((self.evaluation, self.items))
 
 class Grasp(ABC):
-    def __init__(self, items, min_size, max_size, n_items, alpha, max_iter, elite_size, const, max_no_improv=0.2, maximise=True, verbose=False):
+    def __init__(self, time, items, min_size, max_size, n_items, alpha, max_iter, elite_size, const, max_no_improv=0.2, maximise=True, verbose=False):
         super(Grasp, self).__init__()
         self.maximise = maximise        
         self.const = const
@@ -76,7 +77,7 @@ class Grasp(ABC):
         self.ls_count = 0
         self.elite_size = elite_size
         self.elite = []
-        
+        self.time = time
         self.verbose = verbose
         
     @abstractmethod
@@ -224,8 +225,10 @@ class Grasp(ABC):
         
     
     def run(self):
+        start_time = time.time()        
         count_no_improv = 0
-        while self.iteration < self.max_iter:
+        elapsed_time = time.time() - start_time
+        while self.iteration < self.max_iter and elapsed_time <= self.time:
             if self.verbose:
                 print('===============================================')
                 print('GRASP Iteration %d:' % (self.iteration+1))
@@ -253,7 +256,8 @@ class Grasp(ABC):
                 if self.verbose:
                     print('=============================================')
                 return False
-                
+            elapsed_time = time.time() - start_time
+            
         if self.verbose:
             print('=====================================================')
             
