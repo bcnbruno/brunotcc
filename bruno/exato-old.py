@@ -12,10 +12,22 @@ import sklearn.feature_selection as fs
 import argparse
 import copy
 
+from pynput import keyboard
 from modules.grasp import Grasp, Item, Solution
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from operator import attrgetter
+
+break_program = False
+
+### Get key, if key == esc the program ends
+def on_press(key):
+    global break_program
+    print ('Key, ', key, ' pressed')
+    if key == keyboard.Key.esc:
+        print ('Ending program!!!')
+        break_program = True
+        return False
 
 ### Function for formatting time in human readable format
 def get_formatted_time(s):
@@ -180,7 +192,7 @@ def print_solution(solution):
     
     print(s)
     
-def save_solutions(elite, data, args, interrupted_size):
+def save_solutions(elite, data, args):
     dic = vars(args)
     
     s = 'File %s\n' % dic['csv_file']
@@ -199,10 +211,7 @@ def save_solutions(elite, data, args, interrupted_size):
     items = ';'.join(items) + '\n'
     s += items
     
-    s += 'Elite\n'
-    
-    if interrupted_size:
-        s += 'Solution generation interrupted at size %d\n' % interrupted_size
+    s += 'Elite\n'    
     
     head = ['evaluation']
     for i in range(len(data.columns)):
@@ -261,7 +270,7 @@ def main():
     args = parser.parse_args()
     
     if args.verbose:
-        print('\n\nInitiating Exact Method')
+        print('\n\nInitianting Exact Method')
            
      ### Loading data
     if args.dt == 1:
@@ -276,15 +285,14 @@ def main():
     
     L = data.columns.values    
     problem = SPProblem(args.k, args.metric, args.seed, data, args.mins, args.maxs, args.corr_threshold, maximise=True)
-    all_solutions = []
+    all_solutions = []   
     
-    interrupted_size = 0
-    
-    try:
-        for p in range(args.mins, args.maxs+1):
+    with keyboard.Listener(on_press=on_press) as listener:
+        for p in range(2, len(L)+1):
+            if break_program == True:
+                    break
             if args.verbose:
                 print('Generating test solutions for size %d...' % p)
-            i = 0
             for c in it.combinations(L, p):
                 vector = np.zeros(len(L))
                 for a in c:
@@ -292,24 +300,12 @@ def main():
                 solution = Solution(items=items_from_vector(vector, problem)) 
                 solution.evaluation = problem.cost(solution)
                 all_solutions.append(solution)
-                
-                if i % 25 == 0 and i > 0:
-                    print('.', end='')
-                if i % 50 == 0 and i > 0:
-                    print()
-                i += 1
-    except (KeyboardInterrupt, SystemExit):
-        print('Execution interrupted by the user...')
-        interrupted_size = p
-        pass
+                if break_program == True:
+                    break                
+        listener.join()
         
     all_solutions.sort(key=attrgetter('evaluation'), reverse=True)
-    if len(all_solutions) > args.elsize:
-        solutions = all_solutions[:args.elsize]
-    else:
-        solutions = all_solutions
-        
-    save_solutions(solutions, data, args, interrupted_size)
+    save_solutions(all_solutions, data, args)
     
 
 if __name__ == '__main__':
