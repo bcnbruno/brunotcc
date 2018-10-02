@@ -11,6 +11,7 @@ import numpy as np
 import sklearn.feature_selection as fs
 import argparse
 import copy
+import time
 
 from modules.grasp import Grasp, Item, Solution
 from sklearn.cluster import KMeans
@@ -180,7 +181,7 @@ def print_solution(solution):
     
     print(s)
     
-def save_solutions(elite, data, args, interrupted_size):
+def save_solutions(elite, data, args, interrupted_size, elapsed_time):
     dic = vars(args)
     
     s = 'File %s\n' % dic['csv_file']
@@ -200,6 +201,8 @@ def save_solutions(elite, data, args, interrupted_size):
     s += items
     
     s += 'Elite\n'
+    
+    s += 'Elapsed Time;%f\n' % elapsed_time
     
     if interrupted_size:
         s += 'Solution generation interrupted at size %d\n' % interrupted_size
@@ -281,6 +284,7 @@ def main():
     interrupted_size = 0
     
     try:
+        elapsed_time = time.time()
         for p in range(args.mins, args.maxs+1):
             if args.verbose:
                 print('Generating test solutions for size %d...' % p)
@@ -308,8 +312,10 @@ def main():
         solutions = all_solutions[:args.elsize]
     else:
         solutions = all_solutions
-        
-    save_solutions(solutions, data, args, interrupted_size)
+    
+    elapsed_time = time.time() - elapsed_time
+    
+    save_solutions(solutions, data, args, interrupted_size, elapsed_time)
     
 
 if __name__ == '__main__':
