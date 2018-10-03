@@ -55,7 +55,7 @@ class Solution(object):
         return repr((self.evaluation, self.items))
 
 class Grasp(ABC):
-    def __init__(self, time, items, min_size, max_size, n_items, alpha, max_iter, elite_size, const, max_no_improv=0.2, maximise=True, verbose=False):
+    def __init__(self, time, items, min_size, max_size, n_items, alpha, max_iter, elite_size, const, max_no_improv=0.2, maximise=True, verbose=False, max_local_search=30):
         super(Grasp, self).__init__()
         self.maximise = maximise        
         self.const = const
@@ -70,6 +70,7 @@ class Grasp(ABC):
         self.n_items = n_items
         self.alpha = alpha
         self.max_no_improv = int(max_no_improv * max_iter)
+        self.max_local_search = max_local_search
         self.max_iter = max_iter
         self.best = Solution()
         self.iteration = 0
@@ -119,13 +120,42 @@ class Grasp(ABC):
                 
                 self.reevaluate_rcl_items()
             
-        else:
+        elif self.const == 2:
             items = []
             alphas = self.create_alpha_list()        
             i = random.randint(0, 4) # sorteia alphas
             self.create_cl()
             self.update_rcl(alphas[i])
             items = self.build_solution()
+            
+        else: #odd-even selection
+            items = []
+            self.reset_rcl()
+            self.rcl.sort(key=attrgetter('insertion_cost'), reverse=self.maximise)
+            even = True
+            while len(self.rcl):
+                  if even:
+                        item = self.rcl.pop(0)
+                        even = False
+                        items.append(item)
+                  else:
+                        i = random.randint(0, len(self.rcl)-1)
+                        item = self.rcl.pop(i)
+                        even = True
+                        candidate = items + [item]
+                        if self.check_feasibility(candidate):
+                              items.append(item)
+                        else:
+                              self.rcl.append(item)
+                      
+                        self.reevaluate_rcl_items()
+                        
+            items_size = len(items)
+            if items_size > self.max_size:
+                  n = items_size - self.max_size
+                  items.sort(key=attrgetter('insertion_cost'), reverse=self.maximise)
+                  items = items[:-n] # Remove the n least valuable items
+                  
         
         solution = Solution(items=items, maximise=self.maximise)
         solution.evaluation = self.cost(solution)
@@ -183,7 +213,7 @@ class Grasp(ABC):
     
     def local_search(self, solution):
         self.ls_count = 0
-        while self.ls_count < self.max_no_improv:
+        while self.ls_count < self.max_local_search:
             if self.verbose:
                 print('\tLocal Search. Attempt #%d' % (self.ls_count+1))
             candidate = Solution(items=self.get_neighbor(solution))

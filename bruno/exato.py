@@ -164,7 +164,7 @@ class SPProblem(object):
         self.labels = self.km.fit_predict(self.data[att_sel])
         #print('silhouette_score: ', silhouette_score(self.data[att_sel], self.labels, self.metric))
         #print('penalidade: ', np.log(1 + violations))
-        evaluation = silhouette_score(self.data[att_sel], self.labels, self.metric)\
+        evaluation = silhouette_score(self.data, self.labels, self.metric)\
                     - np.log(1 + violations)
             
         self.add_to_hash(solution, evaluation)

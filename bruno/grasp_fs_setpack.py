@@ -108,7 +108,7 @@ class SPProblem(object):
                     constraint[j] = 1
                     self.constraints_feasibility.append(constraint)
         self.constraints_feasibility = np.array(self.constraints_feasibility)
-        #print('shape ', self.constraints_feasibility.shape)
+        print('shape ', self.constraints_feasibility.shape)
         
     ### Get variances for attributes
     def get_variances(self):
@@ -178,7 +178,7 @@ class SPProblem(object):
         
         violations, att_sel = self.precompute_violations(solution)
         self.labels = self.km.fit_predict(self.data[att_sel])
-        evaluation = silhouette_score(self.data[att_sel], self.labels, self.metric)\
+        evaluation = silhouette_score(self.data, self.labels, self.metric)\
                     - np.log(1 + violations)
             
         self.add_to_hash(solution, evaluation)
@@ -186,13 +186,24 @@ class SPProblem(object):
         return evaluation
 
 class Grasp_SetPack(Grasp):
-    def __init__(self, t, problem, alpha, max_iter, elite_size, const, max_no_improv, verbose):
+    def __init__(self, t, problem, alpha, max_iter, elite_size, const, max_no_improv, verbose, max_local_search, intensification_threshold):
         self.problem = problem
         self.min_size = problem.min_size
         self.max_size = problem.max_size
         self.n_items = len(problem.items)
+        self.intensification_threshold = intensification_threshold
         super(Grasp_SetPack, self).__init__(t, problem.items, self.min_size, self.max_size, self.n_items, alpha, max_iter, elite_size, const,
-                max_no_improv, problem.maximise, verbose)
+                max_no_improv, problem.maximise, verbose, max_local_search)
+        
+        ### local search count
+        self.counts = {}
+        self.counts['total'] = 0
+        self.counts['adj_min'] = 0
+        self.counts['adj_max'] = 0
+        self.counts['exac_min'] = 0
+        self.counts['sgn_flip'] = 0
+        self.counts['intens'] = 0
+        self.counts['super_intens'] = 0
       
     def number_solutions_hash(self):
         return self.problem.get_num_hash()        
@@ -200,8 +211,8 @@ class Grasp_SetPack(Grasp):
     def cost(self, solution):
         return self.problem.cost(solution)
         
-    def check_feasibility(self, solution):
-        latest = solution[-1]
+    def check_feasibility_from_item(self, solution, ix):
+        latest = solution[ix]
         f = attrgetter('name')
         if self.problem.constraints_counts[latest.name]:
             index = self.problem.attributes.index(latest.name)
@@ -211,10 +222,19 @@ class Grasp_SetPack(Grasp):
                     for pos, obj in enumerate(self.rcl):
                         if attr == f(obj):
                             #print('pos: ', pos)
-                            #print('rcl: ', self.rcl[pos])
+                            #print('rcl[pos]: ', self.rcl[pos])
                             #self.rcl.remove(pos)
                             self.rcl.remove(self.rcl[pos])
+                            #print()
                             break
+  
+    def check_feasibility(self, solution):
+        if self.const < 3:
+            latests = [-1]
+        else:
+            latests = [-1, -2]
+        for late in latests:
+            self.check_feasibility_from_item(solution, late)
         
         return True
         
@@ -245,29 +265,52 @@ class Grasp_SetPack(Grasp):
                 zeros.append(i)
                 
         return item_count, ones, zeros
-    
+  
     def get_neighbor(self, solution):
         vector = self.problem.get_vector(solution)
         item_count, ones, zeros = self.analyse_vector(vector)
-        proximity = int(self.ls_count / self.max_no_improv * 100)
+        proximity = int(self.ls_count / self.max_local_search * 100)
         
-        if item_count <= 2:
-            flip_index = random.choice(zeros)
-            vector[flip_index] = 1
-        elif proximity < 80:
-            flip_index = random.randint(0, len(vector)-1)
-            vector[flip_index] = (0, 1)[vector[flip_index] == 0]
-        elif item_count == 3:
+        self.counts['total'] += 1
+        
+        # If less than minimum, adjust size to minimum + 1
+        if item_count < self.min_size:
+            flip_indexes = random.sample(zeros, (self.min_size-item_count+1))
+            for f in flip_indexes:
+                  vector[f] = 1
+            self.counts['adj_min'] += 1
+        # If more than maximum, adjust size to maximum - 1
+        elif item_count > self.max_size:
+            flip_indexes = random.sample(ones, (item_count-self.max_size+1))
+            for f in flip_indexes:
+                  vector[f] = 0
+            self.counts['adj_max'] += 1
+        # If exactly min size, add 1 to solution, and then perform a single flip
+        elif item_count == self.min_size:
             flip_index = flip_index2 = random.choice(zeros)
             vector[flip_index] = 1
             while flip_index2 == flip_index:
                 flip_index2 = random.randint(0, len(vector)-1)
             vector[flip_index2] = (0, 1)[vector[flip_index] == 0]
-        else:
-            flip_indexes = random.sample(range(len(vector)), 2)
+            self.counts['exac_min'] += 1
+        # If far from convergence, perform a single flip
+        elif proximity < self.intensification_threshold:
+            flip_index = random.randint(0, len(vector)-1)
+            vector[flip_index] = (0, 1)[vector[flip_index] == 0]
+            self.counts['sgn_flip'] += 1
+        # Else, if next to convergence, perform 2 flips
+        elif self.max_local_search - self.ls_count > 2:
+            flip_indexes = random.sample(list(range(len(vector))), 2)
             vector[flip_indexes[0]] = (0, 1)[vector[flip_indexes[0]] == 0]
             vector[flip_indexes[1]] = (0, 1)[vector[flip_indexes[1]] == 0]
-            
+            self.counts['intens'] += 1
+        # If it's in one of the last two iterations, try to perform a large perturbation
+        else:
+            length = max(1, round(0.1 * (self.max_size - self.min_size)))
+            flip_indexes = random.sample(list(range(len(vector))), length)
+            for f in flip_indexes:
+                  vector[f] = (0, 1)[vector[f] == 0]
+            self.counts['super_intens'] += 1
             
         return self.items_from_vector(vector)
 
@@ -348,15 +391,17 @@ def main():
     parser.add_argument('--metric', default='c', choices=['e', 'c'], help='Metric to optimize: e | c | i | v (silhouette with euclidean distance, silhouette with cosine distance) (default=c)')
     parser.add_argument('--max_iter', type=int, default=300, help='Maximum Number of Iterations (default=100)')
     parser.add_argument('--max_no_improv', '-mximp', type=float, default=0.2, help='Percentage of generations with no improvement to force GRASP to stop (default=0.2)')
+    parser.add_argument('--max_local_search', '-mxls', type=int, default=50, help='Maximum of iterations to be performed inside local search until it stops (default=50)')
     parser.add_argument('--elsize', default=10, type=int, help='Number of solutions to keep in the elite (default=10)')
     parser.add_argument('--mins', type=int, default=3, help='Minimum size of solution (default=3)')
     parser.add_argument('--maxs', type=int, default=6, help='Maximum size of solution (default=6)')
     parser.add_argument('--corr_threshold', '-crth', type=float, default=0.75, help='Value for correlation threshold (absolute value). Used to create constraints (default=0.75)')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose excution of GRASP (default=False)')
     parser.add_argument('--dt', type=int, default=1, help='Choose data: 1 - wines | 2 - moba | 3 - seizure (defaut=1)')
-    parser.add_argument('--const', type=int, default=1, help='Choose contructive method: 1 - Value | 2 - Cardinality (default=1)')
+    parser.add_argument('--const', type=int, default=1, help='Choose contructive method: 1 - Value | 2 - Cardinality | 3 - Odd-even (default=1)')
     parser.add_argument('--alpha', type=int, default=3, help='Greediness factor (default=0.3)')
     parser.add_argument('--time', type=int, default=60, help='Maximum execution time. | 60 = 60s | 3600 = 1h | (default=60s)')
+    parser.add_argument('--intensification_threshold', '-ith', type=int, default=80, help='Percent of iterations without improvement to perform intensification on local search | (default=80)')
     args = parser.parse_args()
     
     ### Loading data
@@ -390,7 +435,7 @@ def main():
                             args.corr_threshold,
                             maximise=maximise)
     
-    grasp = Grasp_SetPack(args.time, problem, args.alpha, args.max_iter, args.elsize, args.const, args.max_no_improv, args.verbose)
+    grasp = Grasp_SetPack(args.time, problem, args.alpha, args.max_iter, args.elsize, args.const, args.max_no_improv, args.verbose, args.max_local_search, args.intensification_threshold)
     
     ### Executing GRASP
     start_time = time.time()
@@ -410,10 +455,16 @@ def main():
         print('\nStopped after %d generations without improvement.\n' % int(args.max_no_improv * args.max_iter))
     if args.const == 1:
         print('Constructive method: Value')
-    else:
+    elif args.const == 2:
         print('Constructive method: Cardinality')
+    else:
+        print('Constructive method: Odd-even')
       
     save_solutions(grasp, data, elapsed_time, max_gen_reached, args)
+    
+    print('Local Search Countings:')
+    for c in grasp.counts:
+          print('%s: %d' % (c, grasp.counts[c]))
     
 if __name__ == '__main__':
     main()
