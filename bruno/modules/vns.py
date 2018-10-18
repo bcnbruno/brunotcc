@@ -34,6 +34,7 @@ class Solution(object):
         else:
             self.evaluation = float('inf')
         self.compute_hash()
+        self.create_id()
         
     def get_hash(self):
         self.compute_hash()
@@ -48,27 +49,37 @@ class Solution(object):
         else:
             self.hash = ''
         
+    def create_id(self):
+        if len(self.items):
+            self.id = copy.deepcopy(self.items[0].id)
+            for i in range(1, len(self.items)):
+                self.id += self.items[i].id
+    
     def __repr__(self):
         return repr((self.evaluation, self.items))
 
 class VNS(ABC):
-    def __init__(self, items, min_size, max_size, n_items, n_neighborhood, max_iter, elite_size, const, max_no_improv=0.2, maximise=True, verbose=False):
+    def __init__(self, problem, n_neighborhood, max_iter, elite_size, 
+                    const, max_no_improv=0.2, maximise=True, verbose=False):
         super(VNS, self).__init__()
-        self.maximise = maximise        
-        self.const = const
         
-        self.items = items
-        self.create_cl()
-                
-        self.min_size = min_size
-        self.max_size = max_size
-        self.n_items = n_items
+        self.problem = problem
+        self.items = problem.items
+        self.min_size = problem.min_size
+        self.max_size = problem.max_size
+        self.n_items = len(problem.items)
+        self.maximise = problem.maximise   
+        self.const = const        
         self.n_neighborhood = n_neighborhood
+        
+        self.create_cl()
+               
         self.max_no_improv = int(max_no_improv * max_iter)
         self.max_iter = max_iter
         self.best = Solution()
         self.iteration = 0
         self.k_neighborhood = 0
+        self.n_type_neighborhood = 3
         self.best_iteration = 0
         self.ls_count = 0
         self.elite_size = elite_size
@@ -92,6 +103,15 @@ class VNS(ABC):
     def reevaluate_rcl_items(self):
         pass
     
+    def create_solution(self, vector):
+        items = self.items_from_vector(vector)
+        solution = Solution(items=items, maximise=self.maximise)        
+        solution.evaluation = self.cost(solution)
+
+        self.check_elite(solution)
+
+        return solution
+
     def construct_greedy(self):
         items = []
         n = random.randint(self.min_size, self.max_size) # quantidade de itens na solucao inicial
@@ -119,6 +139,18 @@ class VNS(ABC):
             return candidate.evaluation > reference.evaluation
         
         return candidate.evaluation < reference.evaluation
+
+    def items_from_vector(self, vector):
+        f = attrgetter('name')
+        new_items = []
+        for bit, attr in zip(vector, self.problem.attributes):
+            if bit:
+                for item in self.items:
+                    if attr == f(item):
+                        new_items.append(copy.deepcopy(item))
+                        break
+                        
+        return new_items
     
     def local_search(self, solution):
         self.ls_count = 0
@@ -169,54 +201,56 @@ class VNS(ABC):
             
         return vector
     
-    def create_ones_zeros(self, vector):
-        zeros = []
-        ones = []
-        for i,item in enumerate(vector):
-            if item:
-                ones.append(i)
-            else:
-                zeros.append(i)
-                
-        return ones, zeros    
-
     def random_choose(self):
         r = random.uniform(0.0, 1.0)
         return r
     
-    def random_k_neighbor(self): # Shaking, pick a random neighbor from the k-th neighborhood
-        number = len(self.best.items)
-        vector = self.get_vector(self.best)
-        ones, zeros = self.create_ones_zeros(vector)        
-        #print('vector inicial', vector)
-        for i in range(0, self.k_neighborhood+1):
-            flip_index = random.choice(zeros)
-            vector[flip_index] = 1
-            a = zeros.pop(zeros.index(flip_index))
-            flip_index = random.choice(ones)
-            vector[flip_index] = 0
-            b = ones.pop(ones.index(flip_index))            
-            ones.append(a)
-            zeros.append(b)
-            
-            r = self.random_choose()
+    def flip_index(self, vector, n):
+        vector_final = vector[:]
+        indexes = [i for i in range(len(vector))]
+        flip = random.sample(indexes, k=n)
+        for i in flip:
+            vector_final[i] = int(not bool(vector_final[i]))        
+        
+        return vector_final
 
-            if (r >= 0.50 and r < 0.75) and number < self.max_size: # add item
-                flip_index = random.choice(zeros)
-                vector[flip_index] = 1
-                a = zeros.pop(zeros.index(flip_index))
-                ones.append(a)
-                number += 1
-            elif (r >= 0.75) and number > self.min_size: # del item
-                flip_index = random.choice(ones)
-                vector[flip_index] = 0
-                a = ones.pop(ones.index(flip_index))
-                zeros.append(a)
-                number -= 1
-                
-        #print('vector final, ', vector)
-        new_candidate = Solution(items=self.items_from_vector(vector))
-        new_candidate.evaluation = self.cost(new_candidate)
+    def add_index(self, vector, n):
+        vector = np.array(vector)
+        zeros = np.where(vector == 0)[0]
+        index = random.sample(list(zeros), k=n)
+        vector[index] = 1
+
+        return vector    
+    
+    def sub_index(self, vector, n):
+        vector = np.array(vector)
+        ones = np.where(vector == 1)[0]
+        index = random.sample(list(ones), k=n)
+        vector[index] = 0
+        
+        return vector
+
+    def quantity_items(self, vector): # keep in the range of items
+        n = list(vector).count(1) 
+        if n < self.min_size:
+            vector = self.add_index(vector, self.min_size - n)                
+        elif n > self.max_size:    
+            vector = self.sub_index(vector, n - self.max_size)
+        
+        return vector     
+
+    def random_k_neighbor(self): # Shaking, pick a random neighbor from the k-th neighborhood
+        if self.n_type_neighborhood == 3:
+            sol_final = self.flip_index(self.best.id, self.k_neighborhood+1)
+            sol_final = self.quantity_items(sol_final) 
+        elif self.n_type_neighborhood == 2:
+            sol_final = self.add_index(self.best.id, self.k_neighborhood+1)
+            sol_final = self.quantity_items(sol_final)
+        else:
+            sol_final = self.sub_index(self.best.id, self.k_neighborhood+1)
+            sol_final = self.quantity_items(sol_final)
+        
+        new_candidate = self.create_solution(sol_final)
         
         return new_candidate
         
@@ -226,8 +260,8 @@ class VNS(ABC):
         if self.verbose:
             print('\tSolution constructed: ', self.best)
         self.check_elite(self.best)
-                
-        while self.iteration < self.max_iter:
+        
+        while self.n_type_neighborhood:
             self.k_neighborhood = 0
             while self.k_neighborhood < self.n_neighborhood:
                 if self.verbose:
@@ -245,9 +279,7 @@ class VNS(ABC):
                     #self.best_iteration = self.iteration 
                     self.best = candidate
                     self.k_neighborhood = 0
-                    count_no_improv = 0      
                 else: # Next neighbor
-                    count_no_improv += 1      
                     self.k_neighborhood += 1
                     
                 if self.verbose:
@@ -256,7 +288,8 @@ class VNS(ABC):
                     if self.verbose:
                         print('=============================================')
                     return False
-                self.iteration += 1    
+                #self.iteration += 1    
+            self.n_type_neighborhood -= 1    
             
         if self.verbose:
             print('=====================================================')

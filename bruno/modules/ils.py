@@ -60,23 +60,24 @@ class Solution(object):
         return repr((self.evaluation, self.items))
 
 class ILS(ABC):
-    def __init__(self, items, min_size, max_size, alpha, max_iter, elite_size, max_no_improv=0.2, maximise=True, verbose=False):
+    def __init__(self, problem, alpha, max_iter, elite_size, max_no_improv=0.2, verbose=False):
         super(ILS, self).__init__()
-        self.maximise = maximise        
         
-        self.items = items
-        self.update_cl()
-        
-        self.min_size = min_size
-        self.max_size = max_size
+        self.items = problem.items        
+        self.min_size = problem.min_size
+        self.max_size = problem.max_size
+        self.maximise = problem.maximise 
         self.alpha = alpha
-        self.max_no_improv = int(max_no_improv * max_iter)
         self.max_iter = max_iter
+        self.elite_size = elite_size
+        self.attributes = problem.attributes
+
+        self.update_cl()
+        self.max_no_improv = int(max_no_improv * max_iter)
         self.best = Solution()
         self.best_iteration = 0
         self.iteration = 0
         self.ls_count = 0
-        self.elite_size = elite_size
         self.elite = []
         
         self.verbose = verbose
@@ -131,7 +132,7 @@ class ILS(ABC):
     def items_from_vector(self, vector):
         f = attrgetter('name')
         new_items = []
-        for bit, attr in zip(vector, self.problem.attributes):
+        for bit, attr in zip(vector, self.attributes):
             if bit:
                 for item in self.items:
                     if attr == f(item):
@@ -268,3 +269,5 @@ class ILS(ABC):
         
     def get_best_iteration(self):
         return self.best_iteration + 1
+
+    

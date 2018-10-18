@@ -289,7 +289,7 @@ def main():
     
     with keyboard.Listener(on_press=on_press) as listener:
         for p in range(2, len(L)+1):
-            if break_program == True:
+            if break_program:
                     break
             if args.verbose:
                 print('Generating test solutions for size %d...' % p)
@@ -300,7 +300,7 @@ def main():
                 solution = Solution(items=items_from_vector(vector, problem)) 
                 solution.evaluation = problem.cost(solution)
                 all_solutions.append(solution)
-                if break_program == True:
+                if break_program:
                     break                
         listener.join()
         

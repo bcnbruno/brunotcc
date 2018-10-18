@@ -185,12 +185,8 @@ class SPProblem(object):
 
 class VNS_SetPack(VNS):
     def __init__(self, problem, n_neighborhood, max_iter, elite_size, const, max_no_improv, verbose):
-        self.problem = problem
-        self.min_size = problem.min_size
-        self.max_size = problem.max_size
-        self.n_items = len(problem.items)
-        super(VNS_SetPack, self).__init__(problem.items, self.min_size, self.max_size, self.n_items, n_neighborhood, max_iter, elite_size, const,
-                max_no_improv, problem.maximise, verbose)
+        super(VNS_SetPack, self).__init__(problem, n_neighborhood, max_iter, 
+                elite_size, const, max_no_improv, verbose)
       
     def number_solutions_hash(self):
         return self.problem.get_num_hash()        

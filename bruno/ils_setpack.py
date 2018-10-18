@@ -188,15 +188,20 @@ class ILS_SetPack(ILS):
         self.problem = problem
         self.min_size = problem.min_size
         self.max_size = problem.max_size
-        super(ILS_SetPack, self).__init__(problem.items, self.min_size, self.max_size, alpha, max_iter, elite_size,
-                max_no_improv, problem.maximise, verbose)
+        #super(ILS_SetPack, self).__init__(problem.items, self.min_size, self.max_size, alpha, max_iter, elite_size,
+        #        max_no_improv, problem.maximise, verbose)
+        super(ILS_SetPack, self).__init__(self.problem, alpha, max_iter, elite_size,
+                max_no_improv, verbose)
     
     def number_solutions_hash(self):
         return self.problem.get_num_hash()  
             
     def cost(self, solution):
         return self.problem.cost(solution)
-        
+    
+    #
+    # mudar essa funcao 
+    #     
     def check_feasibility(self, solution):
         latest = solution[-1]
         f = attrgetter('name')
@@ -205,10 +210,10 @@ class ILS_SetPack(ILS):
             for i, value in enumerate(self.problem.constraints_build[index]):
                 if value:
                     attr = self.problem.attributes[i]
-                    for pos, obj in enumerate(self.rcl):
-                        if attr == f(obj):
-                            self.rcl.remove(self.rcl[pos])
-                            break
+                    #for pos, obj in enumerate(self.rcl):
+                    #    if attr == f(obj):
+                    #        self.rcl.remove(self.rcl[pos])
+                    #        break
         
         return True
         

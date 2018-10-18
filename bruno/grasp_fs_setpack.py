@@ -210,9 +210,6 @@ class Grasp_SetPack(Grasp):
                     attr = self.problem.attributes[i]
                     for pos, obj in enumerate(self.rcl):
                         if attr == f(obj):
-                            #print('pos: ', pos)
-                            #print('rcl: ', self.rcl[pos])
-                            #self.rcl.remove(pos)
                             self.rcl.remove(self.rcl[pos])
                             break
         
