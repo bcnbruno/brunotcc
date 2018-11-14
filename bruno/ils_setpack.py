@@ -184,13 +184,13 @@ class SPProblem(object):
         return evaluation
 
 class ILS_SetPack(ILS):
-    def __init__(self, problem, alpha, max_iter, elite_size, max_no_improv, verbose):
+    def __init__(self, time, problem, alpha, max_iter, elite_size, max_no_improv, verbose):
         self.problem = problem
         self.min_size = problem.min_size
         self.max_size = problem.max_size
         #super(ILS_SetPack, self).__init__(problem.items, self.min_size, self.max_size, alpha, max_iter, elite_size,
         #        max_no_improv, problem.maximise, verbose)
-        super(ILS_SetPack, self).__init__(self.problem, alpha, max_iter, elite_size,
+        super(ILS_SetPack, self).__init__(time, self.problem, alpha, max_iter, elite_size,
                 max_no_improv, verbose)
     
     def number_solutions_hash(self):
@@ -323,12 +323,12 @@ def save_solutions(ils, data, time, max_gen_reached, args):
     if args.lang == 'pt':
         s = s.replace('.', ',')
         
-    row = [ 'Mean', 'Std', 'It_total', 'It_best', 'Number_solutions_hash', 'Hash_access', 'Hash_add' ]
+    row = [ 'Mean', 'Std', 'It_total', 'It_best', 'Time_best', 'Number_solutions_hash', 'Hash_access', 'Hash_add' ]
     row = ';'.join(str(e) for e in row)
             
     s += str(row) + '\n'
     mean, std = ils.mean_std_elite()
-    row = [ mean, std, ils.get_iteration(), ils.get_best_iteration(), ils.number_solutions_hash(), ils.problem.get_hash_access(), ils.problem.get_hash_add() ]
+    row = [ mean, std, ils.get_iteration(), ils.get_best_iteration(), ils.get_time_best(), ils.number_solutions_hash(), ils.problem.get_hash_access(), ils.problem.get_hash_add() ]
     row = ';'.join(str(e) for e in row)
     
     s += str(row)
@@ -352,6 +352,7 @@ def main():
     parser.add_argument('--maxs', type=int, default=6, help='Maximum size of solution (default=6)')
     parser.add_argument('--corr_threshold', '-crth', type=float, default=0.75, help='Value for correlation threshold (absolute value). Used to create constraints (default=0.75)')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose excution of GRASP (default=False)')
+    parser.add_argument('--time', type=int, default=60, help='Maximum execution time. | 60 = 60s | 3600 = 1h | (default=60s)')
     parser.add_argument('--dt', type=int, default=1, help='Choose data: 1 - wines | 2 - moba | 3 - seizure (defaut=1)')
     parser.add_argument('--alpha', type=int, default=3, help='Greediness factor (default=0.3)')
     args = parser.parse_args()
@@ -387,7 +388,7 @@ def main():
                             args.corr_threshold,
                             maximise=maximise)
                             
-    ils = ILS_SetPack(problem, args.alpha, args.max_iter, args.elsize, args.max_no_improv, args.verbose)
+    ils = ILS_SetPack(args.time, problem, args.alpha, args.max_iter, args.elsize, args.max_no_improv, args.verbose)
     ### Executing GRASP
     start_time = time.time()
     max_gen_reached = ils.run()

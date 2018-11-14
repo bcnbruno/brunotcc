@@ -62,7 +62,7 @@ class Solution(object):
         return repr((self.evaluation, self.items))
 
 class Metaheuristic(ABC):
-    def __init__(self, problem, elite_size, maximise=True, verbose=False):
+    def __init__(self, problem, elite_size, verbose):
         super(Metaheuristic, self).__init__()
 
         self.problem = problem

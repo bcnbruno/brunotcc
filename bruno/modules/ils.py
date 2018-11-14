@@ -13,6 +13,7 @@ import math
 import numpy as np
 import random
 import bisect
+import time
 
 class Item(ABC):
     def __init__(self, item_id, insertion_cost):
@@ -60,7 +61,7 @@ class Solution(object):
         return repr((self.evaluation, self.items))
 
 class ILS(ABC):
-    def __init__(self, problem, alpha, max_iter, elite_size, max_no_improv=0.2, verbose=False):
+    def __init__(self, time, problem, alpha, max_iter, elite_size, max_no_improv=0.2, verbose=False):
         super(ILS, self).__init__()
         
         self.items = problem.items        
@@ -75,10 +76,13 @@ class ILS(ABC):
         self.update_cl()
         self.max_no_improv = int(max_no_improv * max_iter)
         self.best = Solution()
-        self.best_iteration = 0
         self.iteration = 0
+        self.best_iteration = 0
+        self.time_best = 0
         self.ls_count = 0
         self.elite = []
+
+        self.time = time
         
         self.verbose = verbose
         
@@ -217,8 +221,11 @@ class ILS(ABC):
             values.append(x.evaluation)
         return round(np.mean(values), 5), round(np.std(values), 5)
    
+    def get_time_best(self):
+        return self.time_best
     
     def run(self):
+        start_time = time.time()        
         count_no_improv = 0        
         if self.verbose:
             print('===============================================')
@@ -230,7 +237,8 @@ class ILS(ABC):
         candidate = self.local_search(candidate)
         self.check_elite(candidate)        
         self.best = candidate
-        while self.iteration < self.max_iter:
+        elapsed_time = time.time() - start_time
+        while self.iteration < self.max_iter and elapsed_time <= self.time:
             # perturbacao
             candidate = self.perturbation(candidate)
             self.check_elite(candidate)            
@@ -240,6 +248,8 @@ class ILS(ABC):
                 if self.verbose:
                     print('\n\t\tNew best! Evaluation: %f' % candidate.evaluation)
                 self.best = candidate
+                self.best_iteration = self.iteration
+                self.time_best = time.time() - start_time 
                 count_no_improv = 0
                 self.best_iteration = self.iteration
             else:
@@ -252,7 +262,9 @@ class ILS(ABC):
                 if self.verbose:
                     print('=============================================')
                 return False
-                
+            self.iteration += 1
+            elapsed_time = time.time() - start_time
+            
         if self.verbose:
             print('=====================================================')
             

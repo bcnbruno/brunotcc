@@ -12,6 +12,7 @@ import copy
 import numpy as np
 import random
 import sys
+import time
 
 class Item(ABC):
     def __init__(self, item_id, insertion_cost):
@@ -60,8 +61,8 @@ class Solution(object):
         return repr((self.evaluation, self.items))
 
 class VNS(ABC):
-    def __init__(self, problem, n_neighborhood, max_iter, elite_size,
-                    const, args, max_no_improv=0.2, maximise=True, verbose=False):
+    def __init__(self, time, problem, n_neighborhood, max_iter, elite_size,
+                    const, args, invert, max_no_improv=0.2, maximise=True, verbose=False):
         super(VNS, self).__init__()
 
         self.problem = problem
@@ -79,15 +80,17 @@ class VNS(ABC):
         self.max_iter = max_iter
         self.best = Solution()
         self.iteration = 0
-        self.k_neighborhood = 0
         self.best_iteration = 0
+        self.time_best = 0
         self.ls_count = 0
         self.elite_size = elite_size
         self.elite = []
-        self.funcs = self.str_to_class(args[0])
+        #self.funcs = self.str_to_class(args[0]) # delete this
         self.shaking = 0
-
+        self.time = time
+        
         self.verbose = verbose
+        self.choose_funcs(invert)
 
     @abstractmethod
     def cost(self, solution):
@@ -105,6 +108,15 @@ class VNS(ABC):
     def reevaluate_rcl_items(self):
         pass
 
+    def choose_funcs(self, invert):
+        if invert:
+            self.funcs_vnd = [self.flip_index, self.swap_index]
+            self.funcs_shaking = [self.add_index, self.sub_index]        
+        else:
+            self.funcs_vnd = [self.add_index, self.sub_index]
+            self.funcs_shaking = [self.flip_index, self.swap_index]
+        
+        
     # Convert string to function class
     def str_to_class(self, f):
         a = []
@@ -159,8 +171,8 @@ class VNS(ABC):
         index = random.randint(0, len(self.funcs)-1)
         vector = self.funcs[index](vector, 1) # Dúvida
 
-        new_solution = self.items_from_vector(vector)
-        return new_solution
+        new_itens = self.items_from_vector(vector)
+        return new_itens
 
 
     def items_from_vector(self, vector):
@@ -175,13 +187,14 @@ class VNS(ABC):
 
         return new_items
 
-    def local_search(self, solution):
+    def local_search_2(self, solution, k, i):
         self.ls_count = 0
         while self.ls_count < self.max_no_improv:
             if self.verbose:
                 print('\tLocal Search. Attempt #%d' % (self.ls_count+1))
-            candidate = Solution(items=self.select_neighborhood(solution))
-            candidate.evaluation = self.cost(candidate)
+            vector = self.funcs_vnd[k](self.problem.get_vector(solution), i) # choose neighbor
+            vector = self.quantity_items(vector) # checks the number of items
+            candidate = self.create_solution(vector)
             if self.improvement(candidate, solution):
                 self.ls_count = 0
                 if self.verbose:
@@ -189,7 +202,25 @@ class VNS(ABC):
                 solution = candidate
             else:
                 self.ls_count += 1
+                
         return solution
+
+    def vnd(self, solution):
+        k = 0
+        kmax = len(self.funcs_vnd)
+        while k < kmax:
+            i = 0
+            while i < self.n_neighborhood: # TO DO put generic value for the maximum value of i
+                candidate = self.local_search_2(solution, k, i)
+                if self.improvement(candidate, solution):
+                    solution = candidate
+                    i = 0
+                    k = 0
+                else:
+                    i += 1
+            k += 1
+
+        return solution 
 
     def check_elite(self, solution):
         hashes = [obj.get_hash() for obj in self.elite]
@@ -224,14 +255,20 @@ class VNS(ABC):
 
         return vector
 
-    def random_choose(self):
-        r = random.uniform(0.0, 1.0)
-        return r
+    def swap_index(self, vector, n):
+        vector_final = vector[:]
+        for x in range(n): 
+            index = random.sample(list(range(len(vector_final))), k=2)
+            vector_final[index] = vector_final[index[::-1]]
+            index.clear()
+
+        return vector_final
 
     def flip_index(self, vector, n):
         vector_final = vector[:]
         indexes = [i for i in range(len(vector))]
         flip = random.sample(indexes, k=n)
+        #print('type flip ', type(flip), flip)
         for i in flip:
             vector_final[i] = int(not bool(vector_final[i]))
 
@@ -262,31 +299,37 @@ class VNS(ABC):
 
         return vector
 
-    def random_k_neighbor(self): # Shaking, pick a random neighbor from the k-th neighborhood
-        sol_final = self.select_funcs()(self.best.id, self.k_neighborhood+1)
+    def random_k_neighbor(self, k, k_neighborhood): # Shaking, pick a random neighbor from the k-th neighborhood
+        sol_final = self.funcs_shaking[k](self.best.id, k_neighborhood+1)
         sol_final = self.quantity_items(sol_final)
 
         new_candidate = self.create_solution(sol_final)
 
         return new_candidate
 
+    def get_time_best(self):
+        return self.time_best
+
     def run(self):
-        count_no_improv = 0
+        start_time = time.time()
+        k = 0
+        kmax = len(self.funcs_shaking)        
         self.best = self.construct_greedy()
         if self.verbose:
             print('\tSolution constructed: ', self.best)
         self.check_elite(self.best)
-        funcs_size = len(self.funcs)
-        while funcs_size - self.shaking:
-            self.k_neighborhood = 0
-            while self.k_neighborhood < self.n_neighborhood:
+        elapsed_time = time.time() - start_time
+        while k < kmax and elapsed_time <= self.time:
+            k_neighborhood = 0
+            while k_neighborhood < self.n_neighborhood and elapsed_time <= self.time:
+                self.iteration += 1
                 if self.verbose:
                     print('===============================================')
-                    print('VNS k_neighborhood %d:' % (self.k_neighborhood+1))
+                    print('VNS k_neighborhood %d:' % (k_neighborhood+1))
                 # candidate = shaking best
-                candidate = self.random_k_neighbor()
+                candidate = self.random_k_neighbor(k, k_neighborhood)
                 self.check_elite(candidate)
-                candidate = self.local_search(candidate)
+                candidate = self.vnd(candidate)
                 self.check_elite(candidate)
 
                 if self.improvement(candidate, self.best):
@@ -294,13 +337,18 @@ class VNS(ABC):
                         print('\n\t\tNew best! Evaluation: %f' % candidate.evaluation)
                     #self.best_iteration = self.iteration
                     self.best = candidate
-                    self.k_neighborhood = 0
+                    self.best_iteration = self.iteration
+                    self.time_best = time.time() - start_time 
+                    k_neighborhood = 0
+                    k = 0
                 else: # Next neighbor
-                    self.k_neighborhood += 1
+                    k_neighborhood += 1
 
                 if self.verbose:
                     print('\tBest=%f' % (self.best.evaluation))
-            self.shaking += 1
+                elapsed_time = time.time() - start_time
+            k += 1
+            elapsed_time = time.time() - start_time
 
         if self.verbose:
             print('=====================================================')

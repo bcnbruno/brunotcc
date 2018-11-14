@@ -1,0 +1,19 @@
+File solutions/ga/wine/solution10.csv
+elapsed_time;max_gen_reached
+32.247567;True
+corr_threshold;dt;elsize;generation_size;k;k_tournament;lang;max_iter;maxs;metric;mins;mutation_prob;population_size;seed;selected_size;verbose
+0.75;1;10;100;3;0.75;en;300;6;c;3;0.01;30;1000;0.5;False
+Elite
+evaluation;0;1;2;3;4;5;6;7;8;9;10;11
+0.671707;1;0;0;1;0;0;1;0;0;0;0;0
+0.647514;0;0;0;1;0;0;1;0;0;1;0;0
+0.634866;0;0;0;1;0;0;1;1;0;0;0;0
+0.628674;0;1;0;1;0;0;1;0;0;0;0;0
+0.626400;1;0;0;1;0;0;1;0;0;1;0;0
+0.613278;0;1;0;0;0;1;0;1;0;0;0;0
+0.603556;0;0;0;1;0;0;0;0;0;1;0;1
+0.598915;0;0;0;1;0;0;0;0;0;1;1;0
+0.579957;0;0;0;0;0;0;1;1;0;1;1;0
+0.573533;1;0;0;1;0;1;0;1;0;0;0;1
+Mean;Std;It_total;It_best;Number_solutions_hash;Hash_access;Hash_add
+0.61784;0.02871;1;1;174;4530;174

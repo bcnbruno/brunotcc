@@ -184,9 +184,9 @@ class SPProblem(object):
         return evaluation
 
 class VNS_SetPack(VNS):
-    def __init__(self, problem, n_neighborhood, max_iter, elite_size, const, max_no_improv, verbose, *args):
-        super(VNS_SetPack, self).__init__(problem, n_neighborhood, max_iter,
-                elite_size, const, args, max_no_improv, verbose)
+    def __init__(self, time, problem, n_neighborhood, max_iter, elite_size, const, invert, max_no_improv, verbose, *args):
+        super(VNS_SetPack, self).__init__(time, problem, n_neighborhood, max_iter,
+                elite_size, const, args, invert, max_no_improv, verbose)
 
     def number_solutions_hash(self):
         return self.problem.get_num_hash()
@@ -202,10 +202,10 @@ class VNS_SetPack(VNS):
             for i, value in enumerate(self.problem.constraints_build[index]):
                 if value:
                     attr = self.problem.attributes[i]
-                    for pos, obj in enumerate(self.rcl):
-                        if attr == f(obj):
-                            self.rcl.remove(self.rcl[pos])
-                            break
+                    #for pos, obj in enumerate(self.rcl):
+                    #    if attr == f(obj):
+                    #        self.rcl.remove(self.rcl[pos])
+                    #        break
 
         return True
 
@@ -316,12 +316,12 @@ def save_solutions(vns, data, time, max_gen_reached, args):
     if args.lang == 'pt':
         s = s.replace('.', ',')
 
-    row = [ 'Mean', 'Std', 'It_total', 'It_best', 'Number_solutions_hash', 'Hash_access', 'Hash_add' ]
+    row = [ 'Mean', 'Std', 'It_total', 'It_best', 'Time_best', 'Number_solutions_hash', 'Hash_access', 'Hash_add' ]
     row = ';'.join(str(e) for e in row)
 
     s += str(row) + '\n'
     mean, std = vns.mean_std_elite()
-    row = [ mean, std, vns.get_iteration(), vns.get_best_iteration(), vns.number_solutions_hash(), vns.problem.get_hash_access(), vns.problem.get_hash_add() ]
+    row = [ mean, std, vns.get_iteration(), vns.get_best_iteration(), vns.get_time_best(), vns.number_solutions_hash(), vns.problem.get_hash_access(), vns.problem.get_hash_add() ]
     row = ';'.join(str(e) for e in row)
 
     s += str(row)
@@ -359,6 +359,8 @@ def main():
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose excution of GRASP (default=False)')
     parser.add_argument('--dt', type=int, default=1, help='Choose data: 1 - wines | 2 - moba | 3 - seizure (defaut=1)')
     parser.add_argument('--const', type=int, default=1, help='Choose contructive method: 1 - Value | 2 - Cardinality (default=1)')
+    parser.add_argument('--time', type=int, default=60, help='Maximum execution time. | 60 = 60s | 3600 = 1h | (default=60s)')
+    parser.add_argument('--invert', type=int, default=0, help='Invert functions (default=0)')
     parser.add_argument('--n_neighborhood', type=int, default=3, help='(default=0.3)')
     parser.add_argument('--funcs', default='abc', help='Select funcs: a -> func1, b -> func2... (default=abc)')
 
@@ -397,7 +399,7 @@ def main():
 
     f = return_funcs(args.funcs)
 
-    vns = VNS_SetPack(problem, args.n_neighborhood, args.max_iter, args.elsize, args.const, args.max_no_improv, args.verbose, f)
+    vns = VNS_SetPack(args.time, problem, args.n_neighborhood, args.max_iter, args.elsize, args.const, args.invert, args.max_no_improv, args.verbose, f)
 
     ### Executing VNS
     start_time = time.time()

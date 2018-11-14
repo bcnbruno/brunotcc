@@ -7,7 +7,7 @@ Created on Wed Oct 10 10:38:32 2018
 """
 
 from modules.ga import GA
-from modules.modules import Item, Solution
+from modules.modules import Item, Solution, Metaheuristic
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 import sklearn.feature_selection as fs
@@ -185,9 +185,9 @@ class SPProblem(object):
         return evaluation
 
 class GA_SetPack(GA):
-    def __init__(self, problem, generation_size, population_size, mutation_prob, selected_size,
+    def __init__(self, time, problem, generation_size, population_size, k_tournament, mutation_prob, selected_size,
                     elite_size, verbose):
-        super(GA_SetPack, self).__init__(problem, generation_size, population_size, mutation_prob,
+        super(GA_SetPack, self).__init__(time, problem, generation_size, population_size, k_tournament, mutation_prob,
                 selected_size, elite_size, verbose)
 
     def number_solutions_hash(self):
@@ -234,7 +234,7 @@ def print_solution(solution):
 
     print(s)
 
-def save_solutions(vns, data, time, max_gen_reached, args):
+def save_solutions(ga, data, time, max_gen_reached, args):
     dic = vars(args)
 
     s = 'File %s\n' % dic['csv_file']
@@ -265,7 +265,7 @@ def save_solutions(vns, data, time, max_gen_reached, args):
     s += head + '\n'
 
     f = attrgetter('id')
-    for sol in vns.elite:
+    for sol in ga.elite:
         vector = np.zeros(len(data.columns), dtype=int)
         for item in sol.items:
             att_id = f(item)
@@ -277,12 +277,12 @@ def save_solutions(vns, data, time, max_gen_reached, args):
     if args.lang == 'pt':
         s = s.replace('.', ',')
 
-    row = [ 'Mean', 'Std', 'It_total', 'It_best', 'Number_solutions_hash', 'Hash_access', 'Hash_add' ]
+    row = [ 'Mean', 'Std', 'It_total', 'It_best', 'Time_best', 'Number_solutions_hash', 'Hash_access', 'Hash_add' ]
     row = ';'.join(str(e) for e in row)
 
     s += str(row) + '\n'
-    mean, std = vns.mean_std_elite()
-    row = [ mean, std, vns.get_iteration(), vns.get_best_iteration(), vns.number_solutions_hash(), vns.problem.get_hash_access(), vns.problem.get_hash_add() ]
+    mean, std = ga.mean_std_elite()
+    row = [ mean, std, ga.get_iteration(), ga.get_best_iteration(), ga.get_time_best(), ga.number_solutions_hash(), ga.problem.get_hash_access(), ga.problem.get_hash_add() ]
     row = ';'.join(str(e) for e in row)
 
     s += str(row)
@@ -309,6 +309,8 @@ def main():
     parser.add_argument('--population_size', type=int, default=30, help='Default (default=30)')
     parser.add_argument('--generation_size', type=int, default=30, help='Default (default=30)')
     parser.add_argument('--mutation_prob', type=float, default=0.01, help='Default (default=0.01)')
+    parser.add_argument('--time', type=int, default=60, help='Maximum execution time. | 60 = 60s | 3600 = 1h | (default=60s)')
+    parser.add_argument('--k_tournament', type=float, default=0.75, help='Default (default=0.75)')
     parser.add_argument('--selected_size', type=float, default=0.5, help='Default (default=0.5)')
 
     args = parser.parse_args()
@@ -344,7 +346,7 @@ def main():
                             args.corr_threshold,
                             maximise=maximise)
 
-    ga = GA_SetPack(problem, args.generation_size, args.population_size, args.mutation_prob,
+    ga = GA_SetPack(args.time, problem, args.generation_size, args.population_size, args.k_tournament, args.mutation_prob,
                     args.selected_size, args.elsize, args.verbose)
 
     ### Executing VNS

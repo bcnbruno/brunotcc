@@ -269,6 +269,31 @@ class Grasp_SetPack(Grasp):
     def get_neighbor(self, solution):
         vector = self.problem.get_vector(solution)
         item_count, ones, zeros = self.analyse_vector(vector)
+        proximity = int(self.ls_count / self.max_no_improv * 100)
+        
+        if item_count <= 2:
+            flip_index = random.choice(zeros)
+            vector[flip_index] = 1
+        elif proximity < 80:
+            flip_index = random.randint(0, len(vector)-1)
+            vector[flip_index] = (0, 1)[vector[flip_index] == 0]
+        elif item_count == 3:
+            flip_index = flip_index2 = random.choice(zeros)
+            vector[flip_index] = 1
+            while flip_index2 == flip_index:
+                flip_index2 = random.randint(0, len(vector)-1)
+            vector[flip_index2] = (0, 1)[vector[flip_index] == 0]
+        else:
+            flip_indexes = random.sample(range(len(vector)), 2)
+            vector[flip_indexes[0]] = (0, 1)[vector[flip_indexes[0]] == 0]
+            vector[flip_indexes[1]] = (0, 1)[vector[flip_indexes[1]] == 0]
+            
+            
+        return self.items_from_vector(vector)
+
+    def get_neighbor(self, solution):
+        vector = self.problem.get_vector(solution)
+        item_count, ones, zeros = self.analyse_vector(vector)
         proximity = int(self.ls_count / self.max_local_search * 100)
         
         self.counts['total'] += 1
@@ -367,12 +392,12 @@ def save_solutions(grasp, data, time, max_gen_reached, args):
     if args.lang == 'pt':
         s = s.replace('.', ',')
 
-    row = [ 'Mean', 'Std', 'It_total', 'It_best', 'Number_solutions_hash', 'Hash_access', 'Hash_add' ]
+    row = [ 'Mean', 'Std', 'It_total', 'It_best', 'Time_best', 'Number_solutions_hash', 'Hash_access', 'Hash_add' ]
     row = ';'.join(str(e) for e in row)
             
     s += str(row) + '\n'
     mean, std = grasp.mean_std_elite()
-    row = [ mean, std, grasp.get_iteration(), grasp.get_best_iteration(), grasp.number_solutions_hash(), grasp.problem.get_hash_access(), grasp.problem.get_hash_add() ]
+    row = [ mean, std, grasp.get_iteration(), grasp.get_best_iteration(), grasp.get_time_best(), grasp.number_solutions_hash(), grasp.problem.get_hash_access(), grasp.problem.get_hash_add() ]
     row = ';'.join(str(e) for e in row)
     
     s += str(row)
