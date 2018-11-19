@@ -1,0 +1,19 @@
+File solutions/vns/moba/solution1.csv
+elapsed_time;max_gen_reached
+2499.766818;True
+const;corr_threshold;dt;elsize;funcs;invert;k;lang;max_iter;max_no_improv;maxs;metric;mins;n_neighborhood;seed;time;verbose
+1;0.75;2;10;abc;0;10;en;300;0.2;6;c;3;3;1;7200;False
+Elite
+evaluation;0;1;2;3;4;5;6;7;8
+0.193673;0;1;0;1;0;1;0;0;0
+0.191034;0;1;0;0;0;1;0;0;1
+0.180171;0;1;1;1;0;1;0;0;0
+0.167519;0;1;1;0;0;1;0;0;1
+0.159309;1;1;0;1;0;1;0;0;0
+0.156776;1;1;1;1;0;1;0;0;0
+0.142341;1;1;1;0;0;1;0;0;1
+0.137383;1;1;1;0;0;1;0;0;0
+0.130046;1;1;0;0;0;1;0;0;1
+0.124038;0;1;1;0;0;1;1;0;0
+Mean;Std;It_total;It_best;Time_best;Number_solutions_hash;Hash_access;Hash_add
+0.15823;0.02357;9;3;1711.1255826950073;178;6540;178
