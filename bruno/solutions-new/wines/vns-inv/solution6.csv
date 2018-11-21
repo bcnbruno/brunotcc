@@ -1,0 +1,19 @@
+File solutions-new/wines/vns-inv/solution6.csv
+elapsed_time;max_gen_reached
+35.882480;True
+const;corr_threshold;dt;elsize;funcs;invert;k;lang;max_iter;max_no_improv;maxs;metric;mins;n_neighborhood;seed;time;verbose
+1;0.75;1;10;abc;1;3;en;300;0.2;50;c;3;3;80;7200;False
+Elite
+evaluation;0;1;10;11;2;3;4;5;6;7;8;9
+0.698179;1;0;0;1;0;1;0;0;0;0;0;0
+0.671707;1;0;0;0;0;1;0;0;1;0;0;0
+0.647514;0;0;0;0;0;1;0;0;1;0;0;1
+0.637756;0;0;0;1;0;0;0;0;0;1;0;1
+0.634866;0;0;0;0;0;1;0;0;1;1;0;0
+0.631337;1;0;1;0;0;1;0;0;0;0;0;0
+0.628674;0;1;0;0;0;1;0;0;1;0;0;0
+0.626400;1;0;0;0;0;1;0;0;1;0;0;1
+0.624724;1;0;1;0;0;0;0;0;0;1;0;0
+0.622325;1;0;0;1;0;1;0;1;0;0;0;0
+Mean;Std;It_total;It_best;Time_best;Number_solutions_hash;Hash_access;Hash_add
+0.64235;0.02314;8;2;13.570544481277466;199;4020;199

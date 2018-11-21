@@ -1,0 +1,15 @@
+File solutions-new/moba/grasp/solution5.csv
+elapsed_time;max_gen_reached
+2627.219570;False
+alpha;const;corr_threshold;dt;elsize;intensification_threshold;k;lang;max_iter;max_local_search;max_no_improv;maxs;metric;mins;seed;time;verbose
+3;1;0.75;2;10;80;10;en;300;50;0.2;6;c;3;50;7200;False
+Elite
+evaluation;0;1;2;3;4;5;6;7;8
+0.087246;1;1;1;1;0;1;0;0;0
+0.075863;0;1;1;0;0;1;0;0;1
+0.073252;0;1;1;0;0;1;1;0;0
+0.065160;0;1;1;0;1;1;0;0;0
+0.058583;0;1;0;0;0;1;1;1;0
+-0.023048;1;1;0;0;0;1;0;0;0
+Mean;Std;It_total;It_best;Time_best;Number_solutions_hash;Hash_access;Hash_add
+0.05618;0.03653;62;2;766.7323820590973;191;5071;191

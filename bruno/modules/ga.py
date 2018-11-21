@@ -89,7 +89,7 @@ class GA(Metaheuristic):
         return offspring_1, offspring_2
 
     def select_p1_p2(self):
-        p1 = random.randint(1, self.n_items/2)
+        p1 = random.randint(1, int(self.n_items/2))
         n = int(self.n_items * 0.20)+1
         p1p2 = list(range(p1, p1+n))
         

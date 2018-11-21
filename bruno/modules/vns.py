@@ -276,16 +276,16 @@ class VNS(ABC):
 
     def add_index(self, vector, n):
         vector = np.array(vector)
-        zeros = np.where(vector == 0)[0]
-        index = random.sample(list(zeros), k=n)
+        zeros = list(np.where(vector == 0)[0])
+        index = random.sample(zeros, k=min(n,len(zeros)))
         vector[index] = 1
 
         return vector
 
     def sub_index(self, vector, n):
         vector = np.array(vector)
-        ones = np.where(vector == 1)[0]
-        index = random.sample(list(ones), k=n)
+        ones = list(np.where(vector == 1)[0])
+        index = random.sample(ones, k=min(n, len(ones)))
         vector[index] = 0
 
         return vector

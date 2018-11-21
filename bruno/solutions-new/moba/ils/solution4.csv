@@ -1,0 +1,19 @@
+File solutions-new/moba/ils/solution4.csv
+elapsed_time;max_gen_reached
+3518.166592;False
+alpha;corr_threshold;dt;elsize;k;lang;max_iter;max_no_improv;maxs;metric;mins;seed;time;verbose
+3;0.75;2;10;10;en;300;0.2;6;c;3;20;7200;False
+Elite
+evaluation;0;1;2;3;4;5;6;7;8
+0.193548;0;1;0;1;0;1;0;0;0
+0.192895;0;1;0;0;0;1;0;0;1
+0.138161;1;1;0;0;0;1;0;1;0
+0.123010;0;1;1;0;0;1;1;0;0
+0.119743;1;1;0;0;0;1;0;0;1
+0.111924;0;1;0;0;0;1;0;1;0
+0.100980;0;1;1;0;1;1;0;0;0
+0.097995;0;1;1;0;0;1;0;0;0
+0.090226;0;1;0;0;0;1;1;0;0
+0.087500;1;1;0;1;0;0;0;0;0
+Mean;Std;It_total;It_best;Time_best;Number_solutions_hash;Hash_access;Hash_add
+0.1256;0.03688;123;3;953.494677066803;254;5722;254

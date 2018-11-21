@@ -1,0 +1,19 @@
+File solutions-new/wines/ils/solution7.csv
+elapsed_time;max_gen_reached
+117.325412;False
+alpha;corr_threshold;dt;elsize;k;lang;max_iter;max_no_improv;maxs;metric;mins;seed;time;verbose
+3;0.75;1;10;3;en;300;0.2;50;c;3;100;7200;False
+Elite
+evaluation;0;1;10;11;2;3;4;5;6;7;8;9
+0.698179;1;0;0;1;0;1;0;0;0;0;0;0
+0.671707;1;0;0;0;0;1;0;0;1;0;0;0
+0.649208;0;1;1;0;0;0;0;0;0;0;0;1
+0.647514;0;0;0;0;0;1;0;0;1;0;0;1
+0.634866;0;0;0;0;0;1;0;0;1;1;0;0
+0.631337;1;0;1;0;0;1;0;0;0;0;0;0
+0.628674;0;1;0;0;0;1;0;0;1;0;0;0
+0.624724;1;0;1;0;0;0;0;0;0;1;0;0
+0.615981;0;1;1;0;0;0;0;0;0;1;0;0
+0.615715;1;0;0;0;0;1;0;1;0;0;0;0
+Mean;Std;It_total;It_best;Time_best;Number_solutions_hash;Hash_access;Hash_add
+0.64179;0.02476;125;5;11.915417671203613;704;5647;704

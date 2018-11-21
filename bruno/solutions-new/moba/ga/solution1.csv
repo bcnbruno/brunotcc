@@ -1,0 +1,19 @@
+File solutions-new/moba/ga/solution1.csv
+elapsed_time;max_gen_reached
+1063.387182;True
+corr_threshold;dt;elsize;generation_size;k;k_tournament;lang;max_iter;maxs;metric;mins;mutation_prob;population_size;seed;selected_size;time;verbose
+0.75;2;10;50;10;0.75;en;300;6;c;3;0.01;30;1;0.5;7200;False
+Elite
+evaluation;0;1;2;3;4;5;6;7;8
+0.193673;0;1;0;1;0;1;0;0;0
+0.191034;0;1;0;0;0;1;0;0;1
+0.180171;0;1;1;1;0;1;0;0;0
+0.167519;0;1;1;0;0;1;0;0;1
+0.159309;1;1;0;1;0;1;0;0;0
+0.156776;1;1;1;1;0;1;0;0;0
+0.137383;1;1;1;0;0;1;0;0;0
+0.124038;0;1;1;0;0;1;1;0;0
+0.112229;0;1;0;0;0;1;0;1;0
+0.111519;1;1;1;0;0;1;1;0;0
+Mean;Std;It_total;It_best;Time_best;Number_solutions_hash;Hash_access;Hash_add
+0.15337;0.02927;51;3;813.0435228347778;77;2280;77
