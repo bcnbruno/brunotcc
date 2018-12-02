@@ -20,7 +20,7 @@ class Item(ABC):
         super(Item, self).__init__()
         self.id = item_id
         self.insertion_cost = insertion_cost
-
+    
     @abstractmethod
     def __repr__(self):
         pass
@@ -37,11 +37,11 @@ class Solution(object):
         else:
             self.evaluation = float('inf')
         self.compute_hash()
-
+        
     def get_hash(self):
         self.compute_hash()
         return self.hash
-
+    
     def compute_hash(self):
         if len(self.items):
             self.hash = copy.deepcopy(self.items[0].id)
@@ -50,149 +50,119 @@ class Solution(object):
             self.hash = ''.join([str(item) for item in self.hash])
         else:
             self.hash = ''
-
+        
     def __repr__(self):
         return repr((self.evaluation, self.items))
 
 class Grasp(ABC):
-    def __init__(self, time, items, min_size, max_size, n_items, alpha, max_iter, elite_size, const, max_no_improv=0.2, maximise=True, verbose=False, max_local_search=30):
+    def __init__(self, time, items, min_size, max_size, n_items, alpha, max_iter, elite_size, const, max_no_improv=0.2, maximise=True, verbose=False):
         super(Grasp, self).__init__()
-        self.maximise = maximise
+        self.maximise = maximise        
         self.const = const
-
+        
         self.items = items
         self.create_alpha_list()
         self.create_cl()
         self.reset_rcl()
-
+        
         self.min_size = min_size
         self.max_size = max_size
         self.n_items = n_items
         self.alpha = alpha
         self.max_no_improv = int(max_no_improv * max_iter)
-        self.max_local_search = max_local_search
         self.max_iter = max_iter
         self.best = Solution()
         self.iteration = 0
         self.best_iteration = 0
-        self.time_best = 0
-        
         self.ls_count = 0
         self.elite_size = elite_size
         self.elite = []
+        self.funcs_local = [self.flip_index, self.swap_index]
         
         self.time = time
+        
         self.verbose = verbose
-
+        
     @abstractmethod
     def cost(self, solution):
         pass
-
+    
     @abstractmethod
     def get_neighbor(self, solution):
         pass
-
+    
     @abstractmethod
     def check_feasibility(self, solution):
         pass
-
+    
     @abstractmethod
     def reevaluate_rcl_items(self):
         pass
-
-    def create_alpha_list(self):
+    
+    def create_alpha_list(self):        
         min_alpha = round((self.min_size / self.n_items), 3)
         max_alpha = 0.8 # 80% dos valores
         n = (max_alpha - min_alpha) / 5
-
-        return np.arange(min_alpha, max_alpha, n)
-
+        
+        return np.arange(min_alpha, max_alpha, n) 
+    
     def construct_greedy_randomized(self):
-        if self.const == 1:  # Construção por valor
+        if self.const == 1:  # Construção por valor     
             items = []
             self.reset_rcl()
             while len(self.rcl):
                 self.update_rcl(-1)
                 i = random.randint(0, len(self.rcl)-1)
-                item = self.rcl.pop(i)
+                item = self.rcl.pop(i)            
                 candidate = items + [item]
                 if self.check_feasibility(candidate):
                     items.append(item)
                 else:
                     self.rcl.append(item)
-
+                
                 self.reevaluate_rcl_items()
-
-        elif self.const == 2:
+            
+        else:
             items = []
-            alphas = self.create_alpha_list()
+            alphas = self.create_alpha_list()        
             i = random.randint(0, 4) # sorteia alphas
             self.create_cl()
             self.update_rcl(alphas[i])
             items = self.build_solution()
-
-        else: #odd-even selection
-            items = []
-            self.reset_rcl()
-            self.rcl.sort(key=attrgetter('insertion_cost'), reverse=self.maximise)
-            even = True
-            while len(self.rcl):
-                  if even:
-                        item = self.rcl.pop(0)
-                        even = False
-                        items.append(item)
-                  else:
-                        i = random.randint(0, len(self.rcl)-1)
-                        item = self.rcl.pop(i)
-                        even = True
-                        candidate = items + [item]
-                        if self.check_feasibility(candidate):
-                              items.append(item)
-                        else:
-                              self.rcl.append(item)
-
-                        self.reevaluate_rcl_items()
-
-            items_size = len(items)
-            if items_size > self.max_size:
-                  n = items_size - self.max_size
-                  items.sort(key=attrgetter('insertion_cost'), reverse=self.maximise)
-                  items = items[:-n] # Remove the n least valuable items
-
-
+        
         solution = Solution(items=items, maximise=self.maximise)
         solution.evaluation = self.cost(solution)
-
+        
         return solution
-
+    
     def create_cl(self):
         self.cl = copy.deepcopy(self.items)
         self.cl.sort(key=attrgetter('insertion_cost'), reverse=self.maximise)
-
+    
     def reset_rcl(self):
         self.rcl = copy.deepcopy(self.items)
-
+        
     def update_rcl(self, alph):
-        if alph == -1: # Construção por valor
+        if alph == -1: # Construção por valor            
             rcl_max = max(self.rcl, key=attrgetter('insertion_cost')).insertion_cost
             rcl_min = min(self.rcl, key=attrgetter('insertion_cost')).insertion_cost
-
+        
             if self.maximise:
                 threshold = rcl_max - self.alpha*(rcl_max - rcl_min)
                 self.rcl = [item for item in self.rcl if item.insertion_cost >= threshold]
             else:
                 threshold = rcl_min + self.alpha*(rcl_max - rcl_min)
                 self.rcl = [item for item in self.rcl if item.insertion_cost <= threshold]
-
+                
             n = min(self.alpha, len(self.rcl))
             self.rcl.sort(key=attrgetter('insertion_cost'), reverse=self.maximise)
             self.rcl = self.rcl[:n]
-
+        
         else: # Por cardinalidade
             # Pega da lista de candidatos os n melhores e insere na lista dos candidatos restritos
             n = max( 1, int(round(alph * self.n_items)) )
             self.rcl = copy.deepcopy(self.cl[:n])
-
+        
     def build_solution(self):
         s = []
         # Sorteia quantos itens serao coletados para a solucao
@@ -205,22 +175,80 @@ class Grasp(ABC):
                 it -= 1
             else:
                 break
-
+        
         return s
-
+        
     def improvement(self, candidate, reference):
         if self.maximise:
             return candidate.evaluation > reference.evaluation
-
+        
         return candidate.evaluation < reference.evaluation
+    
+    def create_solution(self, vector):
+        items = self.items_from_vector(vector)
+        solution = Solution(items=items, maximise=self.maximise)
+        solution.evaluation = self.cost(solution)
 
+        self.check_elite(solution)
+
+        return solution
+        
+    def swap_index(self, vector, n):
+        vector_final = vector[:]
+        for x in range(n): 
+            index = random.sample(list(range(len(vector_final))), k=2)
+            vector_final[index] = vector_final[index[::-1]]
+            index.clear()
+
+        return vector_final
+
+    def flip_index(self, vector, n):
+        vector_final = vector[:]
+        indexes = [i for i in range(len(vector))]
+        flip = random.sample(indexes, k=n)
+        #print('type flip ', type(flip), flip)
+        for i in flip:
+            vector_final[i] = int(not bool(vector_final[i]))
+
+        return vector_final
+
+    def add_index(self, vector, n):
+        vector = np.array(vector)
+        zeros = list(np.where(vector == 0)[0])
+        index = random.sample(zeros, k=min(n,len(zeros)))
+        vector[index] = 1
+
+        return vector
+
+    def sub_index(self, vector, n):
+        vector = np.array(vector)
+        ones = list(np.where(vector == 1)[0])
+        index = random.sample(ones, k=min(n, len(ones)))
+        vector[index] = 0
+
+        return vector
+
+    def quantity_items(self, vector): # keep in the range of items
+        n = list(vector).count(1)
+        if n < self.min_size:
+            vector = self.add_index(vector, self.min_size - n)
+        elif n > self.max_size:
+            vector = self.sub_index(vector, n - self.max_size)
+
+        return vector
+    
     def local_search(self, solution):
         self.ls_count = 0
-        while self.ls_count < self.max_local_search:
+        i = 0
+        while self.ls_count < self.max_no_improv:
             if self.verbose:
                 print('\tLocal Search. Attempt #%d' % (self.ls_count+1))
-            candidate = Solution(items=self.get_neighbor(solution))
-            candidate.evaluation = self.cost(candidate)
+            #candidate = Solution(items=self.get_neighbor(solution))
+            #candidate.evaluation = self.cost(candidate)
+            i = int(not(bool(i)))
+            vector = self.funcs_local[i](self.problem.get_vector(solution), 1)
+            vector = self.quantity_items(vector)
+            candidate = self.create_solution(vector)
             if self.improvement(candidate, solution):
                 self.ls_count = 0
                 if self.verbose:
@@ -229,7 +257,7 @@ class Grasp(ABC):
             else:
                 self.ls_count += 1
         return solution
-
+        
     def check_elite(self, solution):
         hashes = [obj.get_hash() for obj in self.elite]
         if solution.get_hash() not in hashes:
@@ -249,18 +277,16 @@ class Grasp(ABC):
                         self.elite.pop(len(self.elite)-1)
                         self.elite.append(copy.deepcopy(solution))
                         self.elite.sort(key=attrgetter('evaluation'), reverse=self.maximise)
-
+      
     def mean_std_elite(self):
         values = []
         for x in self.elite:
             values.append(x.evaluation)
         return round(np.mean(values), 5), round(np.std(values), 5)
-
-    def get_time_best(self):
-        return self.time_best
-
+        
+    
     def run(self):
-        start_time = time.time()
+        start_time = time.time()        
         count_no_improv = 0
         elapsed_time = time.time() - start_time
         while self.iteration < self.max_iter and elapsed_time <= self.time:
@@ -271,44 +297,41 @@ class Grasp(ABC):
             if self.verbose:
                 print('\tSolution constructed: ', candidate)
             self.check_elite(candidate)
-
+            
             candidate = self.local_search(candidate)
             self.check_elite(candidate)
-
+            
             if self.improvement(candidate, self.best):
                 if self.verbose:
                     print('\n\t\tNew best! Evaluation: %f' % candidate.evaluation)
+                self.best_iteration = self.iteration 
                 self.best = candidate
-                self.best_iteration = self.iteration
-                self.time_best = time.time() - start_time 
-                    
                 count_no_improv = 0
             else:
                 count_no_improv += 1
-
+                
+            self.iteration += 1
             if self.verbose:
                 print('\tBest=%f' % (self.best.evaluation))
             if count_no_improv == self.max_no_improv:
                 if self.verbose:
                     print('=============================================')
                 return False
-                
-            self.iteration += 1            
             elapsed_time = time.time() - start_time
-
+            
         if self.verbose:
             print('=====================================================')
-
+            
         return True
-
+            
     def get_best(self):
         return self.best
-
+        
     def get_iteration(self):
         return self.iteration + 1
-
+    
     def get_best_iteration(self):
         return self.best_iteration + 1
-
+        
     def get_elite(self):
         return self.elite

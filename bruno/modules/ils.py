@@ -80,8 +80,12 @@ class ILS(ABC):
         self.best_iteration = 0
         self.time_best = 0
         self.ls_count = 0
+        self.idx_func = 0
+        self.level_func = 0
         self.elite = []
-
+        self.funcs = [self.add_index, self.sub_index, self.flip_index, self.swap_index]
+        self.funcs_local = [self.flip_index, self.swap_index]
+               
         self.time = time
         
         self.verbose = verbose
@@ -156,34 +160,77 @@ class ILS(ABC):
                 
         return ones, zeros
     
-    def perturbation(self, candidate): 
-        vector = self.get_vector(candidate)
-        ones, zeros = self.create_ones_zeros(vector)        
-        # Sorteia de 1% até 10% para fazer troca de itens
-        n = round((random.uniform(1, 10.1) / 100) * len(self.items)) + 1
-        #print('n: ', n)
-        while n:
-            flip_index = random.choice(zeros)
-            vector[flip_index] = 1
-            a = zeros.pop(zeros.index(flip_index))
-            flip_index = random.choice(ones)
-            vector[flip_index] = 0
-            b = ones.pop(ones.index(flip_index))            
-            ones.append(a)
-            zeros.append(b)
-            n -= 1            
-        new_candidate = Solution(items=self.items_from_vector(vector))
-        new_candidate.evaluation = self.cost(new_candidate)
-        
-        return new_candidate
+    def create_solution(self, vector):
+        items = self.items_from_vector(vector)
+        solution = Solution(items=items, maximise=self.maximise)
+        solution.evaluation = self.cost(solution)
+
+        self.check_elite(solution)
+
+        return solution
     
+    def swap_index(self, vector, n):
+        vector_final = vector[:]
+        for x in range(n): 
+            index = random.sample(list(range(len(vector_final))), k=2)
+            vector_final[index] = vector_final[index[::-1]]
+            index.clear()
+
+        return vector_final
+
+    def flip_index(self, vector, n):
+        vector_final = vector[:]
+        indexes = [i for i in range(len(vector))]
+        flip = random.sample(indexes, k=n)
+        #print('type flip ', type(flip), flip)
+        for i in flip:
+            vector_final[i] = int(not bool(vector_final[i]))
+
+        return vector_final
+
+    def add_index(self, vector, n):
+        vector = np.array(vector)
+        zeros = list(np.where(vector == 0)[0])
+        index = random.sample(zeros, k=min(n,len(zeros)))
+        vector[index] = 1
+
+        return vector
+
+    def sub_index(self, vector, n):
+        vector = np.array(vector)
+        ones = list(np.where(vector == 1)[0])
+        index = random.sample(ones, k=min(n, len(ones)))
+        vector[index] = 0
+
+        return vector
+
+    def quantity_items(self, vector): # keep in the range of items
+        n = list(vector).count(1)
+        if n < self.min_size:
+            vector = self.add_index(vector, self.min_size - n)
+        elif n > self.max_size:
+            vector = self.sub_index(vector, n - self.max_size)
+
+        return vector
+    
+    def perturbation(self, candidate):         
+        vector = self.funcs[self.idx_func](self.problem.get_vector(candidate), self.level_func+1)
+        vector = self.quantity_items(vector)
+        
+        return self.create_solution(vector)
+        
     def local_search(self, solution):
         self.ls_count = 0
+        i = 0
         while self.ls_count < self.max_no_improv:
             if self.verbose:
                 print('\tLocal Search. Attempt #%d' % (self.ls_count+1))
-            candidate = Solution(items=self.get_neighbor(solution))
-            candidate.evaluation = self.cost(candidate)
+            #candidate = Solution(items=self.get_neighbor(solution))            
+            #candidate.evaluation = self.cost(candidate)
+            i = int(not(bool(i)))
+            vector = self.funcs_local[i](self.problem.get_vector(solution), 1)
+            vector = self.quantity_items(vector)
+            candidate = self.create_solution(vector)
             if self.improvement(candidate, solution):
                 self.ls_count = 0
                 if self.verbose:
@@ -240,7 +287,7 @@ class ILS(ABC):
         elapsed_time = time.time() - start_time
         while self.iteration < self.max_iter and elapsed_time <= self.time:
             # perturbacao
-            candidate = self.perturbation(candidate)
+            candidate = self.perturbation(self.best)
             self.check_elite(candidate)            
             candidate = self.local_search(candidate)
             self.check_elite(candidate)
@@ -251,11 +298,25 @@ class ILS(ABC):
                 self.best_iteration = self.iteration
                 self.time_best = time.time() - start_time 
                 count_no_improv = 0
+                self.idx_func = 0
+                self.level_func = 0
                 self.best_iteration = self.iteration
             else:
                 count_no_improv += 1
                 
             self.iteration += 1
+            
+            if count_no_improv >= 3:
+                if self.level_func == 2:
+                    if self.idx_func == len(self.funcs)-1:
+                        self.idx_func = 0
+                        self.level_func = 0
+                    else:
+                        self.idx_func += 1
+                        self.level_func = 0
+                else:
+                    self.level_func += 1
+                   
             if self.verbose:
                 print('\tBest=%f' % (self.best.evaluation))
             if count_no_improv == self.max_no_improv:

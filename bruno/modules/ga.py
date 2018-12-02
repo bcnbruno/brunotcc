@@ -166,7 +166,8 @@ class GA(Metaheuristic):
             print('===============================================')
             print('GENETIC ALGORITHM')
             print('===============================================')
-        while generation < self.generation_size and elapsed_time <= self.time:            
+        while generation < self.generation_size and elapsed_time <= self.time:
+        #while generation < self.generation_size:            
             if self.verbose:                
                 print('GENERATION ', (generation)+1)
             # the new population is equal to the elite plus the best children

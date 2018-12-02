@@ -359,7 +359,7 @@ def main():
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose excution of GRASP (default=False)')
     parser.add_argument('--dt', type=int, default=1, help='Choose data: 1 - wines | 2 - moba | 3 - seizure (defaut=1)')
     parser.add_argument('--const', type=int, default=1, help='Choose contructive method: 1 - Value | 2 - Cardinality (default=1)')
-    parser.add_argument('--time', type=int, default=60, help='Maximum execution time. | 60 = 60s | 3600 = 1h | (default=60s)')
+    parser.add_argument('--time', type=int, default=7200, help='Maximum execution time. | 60 = 60s | 3600 = 1h | (default=60s)')
     parser.add_argument('--invert', type=int, default=0, help='Invert functions (default=0)')
     parser.add_argument('--n_neighborhood', type=int, default=3, help='(default=0.3)')
     parser.add_argument('--funcs', default='abc', help='Select funcs: a -> func1, b -> func2... (default=abc)')

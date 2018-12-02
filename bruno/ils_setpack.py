@@ -352,7 +352,7 @@ def main():
     parser.add_argument('--maxs', type=int, default=6, help='Maximum size of solution (default=6)')
     parser.add_argument('--corr_threshold', '-crth', type=float, default=0.75, help='Value for correlation threshold (absolute value). Used to create constraints (default=0.75)')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose excution of GRASP (default=False)')
-    parser.add_argument('--time', type=int, default=60, help='Maximum execution time. | 60 = 60s | 3600 = 1h | (default=60s)')
+    parser.add_argument('--time', type=int, default=7200, help='Maximum execution time. | 60 = 60s | 3600 = 1h | (default=60s)')
     parser.add_argument('--dt', type=int, default=1, help='Choose data: 1 - wines | 2 - moba | 3 - seizure (defaut=1)')
     parser.add_argument('--alpha', type=int, default=3, help='Greediness factor (default=0.3)')
     args = parser.parse_args()

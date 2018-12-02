@@ -309,7 +309,7 @@ def main():
     parser.add_argument('--population_size', type=int, default=30, help='Default (default=30)')
     parser.add_argument('--generation_size', type=int, default=30, help='Default (default=30)')
     parser.add_argument('--mutation_prob', type=float, default=0.01, help='Default (default=0.01)')
-    parser.add_argument('--time', type=int, default=60, help='Maximum execution time. | 60 = 60s | 3600 = 1h | (default=60s)')
+    parser.add_argument('--time', type=int, default=7200, help='Maximum execution time. | 60 = 60s | 3600 = 1h | (default=60s)')
     parser.add_argument('--k_tournament', type=float, default=0.75, help='Default (default=0.75)')
     parser.add_argument('--selected_size', type=float, default=0.5, help='Default (default=0.5)')
 
@@ -365,13 +365,6 @@ def main():
 
     if not max_gen_reached:
         print('\nStopped after %d generations without improvement.\n' % int(args.max_no_improv * args.max_iter))
-
-    """print('Mean, std: ', grasp.mean_std_elite())
-    print('Iterations total: ', grasp.iteration)
-    print('Iteration best: ', grasp.best_iteration)
-    print('Number of solutions in the hash: ', grasp.number_solutions_hash())
-    print('Hash access: ', grasp.problem.hash_access)
-    print('Hash add: ', grasp.problem.hash_add)"""
 
     save_solutions(ga, data, elapsed_time, max_gen_reached, args)
 
