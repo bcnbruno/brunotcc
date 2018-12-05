@@ -7,6 +7,7 @@ Created on Fri Nov 30 00:09:56 2018
 """
 import pandas as pd
 import numpy as np
+import re
 
 best = []
 best_avg = []
@@ -26,7 +27,7 @@ paths_1 = ['solutions-new/wines/grasp/solution', 'solutions-new/wines/ils/soluti
 paths_2 = ['solutions-new/moba/grasp/solution', 'solutions-new/moba/ils/solution', 'solutions-new/moba/ga/solution', 'solutions-new/moba/vns/solution', 'solutions-new/moba/vns-inv/solution']
 paths_3 = ['solutions-new/seizure/grasp/solution', 'solutions-new/seizure/ils/solution', 'solutions-new/seizure/ga/solution', 'solutions-new/seizure/vns/solution', 'solutions-new/seizure/vns-inv/solution']
 
-for l, x in enumerate(paths_2):
+for l, x in enumerate(paths_3):
    
     all_times = []
     all_fitness = []
@@ -48,7 +49,7 @@ for l, x in enumerate(paths_2):
                     all_fitness.append(rows[0].split(";")[0])
                 else:
                     continue
-            elif j == len(data.values)-1:               
+            elif j == len(data.values)-1:     
                 all_it_best.append(rows[0].split(";")[3])
                 all_time_best.append(rows[0].split(";")[4])
                 all_hash_size.append(rows[0].split(";")[5])
@@ -94,8 +95,8 @@ def save(best, best_avg, best_std, fitness_avg, fitness_std, time_avg, time_std,
         s += str(access_avg[i]) + ';' + str(access_std[i]) 
         s += '\n'
     
-    fp = open('solutions-new/moba/tabela_moba.csv', 'w')
+    fp = open('solutions-new/seizure/tabela_seizure_2.csv', 'w')
     fp.write(s)
     fp.close()
-    
+
 save(best, best_avg, best_std, fitness_avg, fitness_std, time_avg, time_std, it_avg, it_std, size_avg, size_std)

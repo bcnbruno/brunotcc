@@ -73,6 +73,7 @@ class Grasp(ABC):
         self.max_iter = max_iter
         self.best = Solution()
         self.iteration = 0
+        self.time_best = 0
         self.best_iteration = 0
         self.ls_count = 0
         self.elite_size = elite_size
@@ -283,7 +284,9 @@ class Grasp(ABC):
         for x in self.elite:
             values.append(x.evaluation)
         return round(np.mean(values), 5), round(np.std(values), 5)
-        
+    
+    def get_time_best(self):
+        return self.time_best
     
     def run(self):
         start_time = time.time()        
@@ -306,6 +309,7 @@ class Grasp(ABC):
                     print('\n\t\tNew best! Evaluation: %f' % candidate.evaluation)
                 self.best_iteration = self.iteration 
                 self.best = candidate
+                self.time_best = time.time() - start_time 
                 count_no_improv = 0
             else:
                 count_no_improv += 1

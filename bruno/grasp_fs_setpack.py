@@ -321,12 +321,12 @@ def save_solutions(grasp, data, time, max_gen_reached, args):
     if args.lang == 'pt':
         s = s.replace('.', ',')
 
-    row = [ 'Mean', 'Std', 'It_total', 'It_best', 'Number_solutions_hash', 'Hash_access', 'Hash_add' ]
+    row = [ 'Mean', 'Std', 'It_total', 'It_best', 'Time_best', 'Number_solutions_hash', 'Hash_access', 'Hash_add' ]
     row = ';'.join(str(e) for e in row)
             
     s += str(row) + '\n'
     mean, std = grasp.mean_std_elite()
-    row = [ mean, std, grasp.get_iteration(), grasp.get_best_iteration(), grasp.number_solutions_hash(), grasp.problem.get_hash_access(), grasp.problem.get_hash_add() ]
+    row = [ mean, std, grasp.get_iteration(), grasp.get_best_iteration(), grasp.get_time_best(), grasp.number_solutions_hash(), grasp.problem.get_hash_access(), grasp.problem.get_hash_add() ]
     row = ';'.join(str(e) for e in row)
     
     s += str(row)
